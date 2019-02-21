@@ -12,6 +12,10 @@ InstallMethod( HomalgTransposedMat,
                 [ IsHomalgMatrix ], 
 function( M )
 
+  if NrRows( M ) = 0 or NrColumns( M ) = 0 then
+      return HomalgZeroMatrix( NrColumns( M ), NrRows( M ), HomalgRing( M ) );
+  fi;
+    
   return HomalgMatrix( String( TransposedMat( EntriesOfHomalgMatrixAsListList( M ) ) ), NrColumns( M ), NrRows( M ), HomalgRing( M ) );
 
 end );
