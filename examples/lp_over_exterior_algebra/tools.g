@@ -161,7 +161,7 @@ zero_matrix := HomalgZeroMatrix( NrRows(A), NrColumns(A), S );
 sigma := basis_indices[ m ];
 e_sigma := ring_element( sigma, S );
 
-return Iterated( List( basis_indices, function( tau )
+return UnionOfColumns( List( basis_indices, function( tau )
                             local lambda, m;
                             
                             if ( not IsSubset( sigma, tau ) ) or ( IsSubset( tau, sigma ) and Length( tau ) > Length( sigma ) ) then 
@@ -184,7 +184,7 @@ return Iterated( List( basis_indices, function( tau )
                             
                             return  ( ( ring_element( lambda, S )* ring_element( tau, S ) )/e_sigma )*d[ m ][ 2 ];
                             
-                            end ), UnionOfColumns );
+                            end ) );
                      
 end );
  
@@ -202,7 +202,7 @@ fi;
 basis_indices := standard_list_of_basis_indices(  A!.ring  );
 p := Position( basis_indices, sigma ); 
 if HasIsOne( A ) and IsOne( A ) then
-	return Iterated( [ HomalgZeroMatrix(NrRows(A), (p-1)*NrColumns(A), A!.ring ), A, HomalgZeroMatrix( NrRows(A), ( Length(basis_indices) - p )*NrColumns(A), A!.ring)], UnionOfColumns );
+	return UnionOfColumns( [ HomalgZeroMatrix(NrRows(A), (p-1)*NrColumns(A), A!.ring ), A, HomalgZeroMatrix( NrRows(A), ( Length(basis_indices) - p )*NrColumns(A), A!.ring)] );
 elif HasIsZero( A ) and IsZero( A ) then
 	return HomalgZeroMatrix( NrRows(A), NrColumns(A)*Length( basis_indices ), A!.ring );
 else

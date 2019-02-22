@@ -6,19 +6,51 @@ ReadPackage( "StableCategoriesForCAP", "/examples/lp_over_exterior_algebra/tools
 MyBlownUpSingleEntry := function( basis_indices, r )
   local R, Q;
 
-    R := r!.ring;
+    R := HomalgRing( r );
     Q := CoefficientsRing( R );
+
+    result := UnionOfRows( List( basis_indices, u -> Q*FLeft( u, r ) ) );
     
-    return UnionOfRows( List( basis_indices, u -> Q*FLeft( u, r ) ) );
+    if Length( basis_indices ) = 4 then
+        decomposition := DecompositionOfHomalgMat( r );
+        r_0 := EntriesOfHomalgMatrix( decomposition[1][2] )[1];
+        r_1 := EntriesOfHomalgMatrix( decomposition[2][2] )[1];
+        r_2 := EntriesOfHomalgMatrix( decomposition[3][2] )[1];
+        r_3 := EntriesOfHomalgMatrix( decomposition[4][2] )[1];
+        
+        alternative_result := Q * HomalgMatrix( [r_0,0,0,0,r_1,r_0,0,0,r_2,0,r_0,0,r_3,-r_2,r_1,r_0], 4, 4, R );
+        
+        Assert( 0, alternative_result = result );
+
+        alternative_result := HomalgMatrix( [ r_0 + r_3 * ("e0*e1"/R), - r_2 * ("e0*e1"/R), r_1 * ("e0*e1"/R), r_1, r_0 + r_3 * ("e0*e1"/R), 0, r_2, 0, r_0 + r_3 * ("e0*e1"/R) ], 3, 3, R );
+    fi;
+    
+    return alternative_result;
 end;
 
 MyBlownUpSingleEntryRightToLeft := function( basis_indices, r )
   local R, Q;
 
-    R := r!.ring;
+    R := HomalgRing( r );
     Q := CoefficientsRing( R );
+
+    result := UnionOfRows( List( basis_indices, u -> Involution( Q*FRight( u, r ) ) ) );
+  
+    if Length( basis_indices ) = 4 then
+        decomposition := DecompositionOfHomalgMat( r );
+        r_0 := EntriesOfHomalgMatrix( decomposition[1][2] )[1];
+        r_1 := EntriesOfHomalgMatrix( decomposition[2][2] )[1];
+        r_2 := EntriesOfHomalgMatrix( decomposition[3][2] )[1];
+        r_3 := EntriesOfHomalgMatrix( decomposition[4][2] )[1];
+        
+        alternative_result := Q * HomalgMatrix( [r_0,0,0,0,r_1,r_0,0,0,r_2,0,r_0,0,r_3,r_2,-r_1,r_0], 4, 4, R );
+        
+        Assert( 0, alternative_result = result );
+
+        alternative_result := HomalgMatrix( [ r_0 + r_3 * ("e0*e1"/R), r_2 * ("e0*e1"/R), - r_1 * ("e0*e1"/R), r_1, r_0 + r_3 * ("e0*e1"/R), 0, r_2, 0, r_0 + r_3 * ("e0*e1"/R) ], 3, 3, R );
+    fi;
     
-    return UnionOfRows( List( basis_indices, u -> Involution( Q*FRight( u, r ) ) ) );
+    return alternative_result;
 end;
 
 MyBlownUpMatrix := function( basis_indices, M )
@@ -28,6 +60,11 @@ MyBlownUpMatrix := function( basis_indices, M )
     Q := CoefficientsRing( R );
     
     l := Length( basis_indices );
+
+    if l = 4 then
+        Q := R;
+        l := 3;
+    fi;
     
     if NrRows( M ) = 0 or NrColumns( M ) = 0 then
         return HomalgZeroMatrix( l * NrRows( M ), l * NrColumns( M ), Q );
@@ -43,6 +80,11 @@ MyBlownUpMatrixRightToLeft := function( basis_indices, M )
     Q := CoefficientsRing( R );
     
     l := Length( basis_indices );
+    
+    if l = 4 then
+        Q := R;
+        l := 3;
+    fi;
     
     if NrRows( M ) = 0 or NrColumns( M ) = 0 then
         return HomalgZeroMatrix( l * NrRows( M ), l * NrColumns( M ), Q );
@@ -78,17 +120,32 @@ end;
 MyReducedSingleEntryOfVector := function( R, basis_indices, M )
   local l, first_column_entries;
     l := Length( basis_indices );
+
+    if Length( basis_indices ) = 4 then
+        l := 3;
+    fi;
+
     Assert( 0, NrRows( M ) = l );
     Assert( 0, NrColumns( M ) = 1 );
 
     first_column_entries := EntriesOfHomalgMatrix( M );
+    x := first_column_entries;
     
+    if Length( basis_indices ) = 4 then
+        return HomalgMatrix( [[x[1] + x[2] * ("e0"/R) + x[3] * ("e1"/R)]], 1, 1, R );
+    fi;
+
     return HomalgMatrix( [[Sum( [ 1 .. l ], i -> (first_column_entries[ i ]/R) * ring_element( basis_indices[ i ], R ) )]], 1, 1, R );
 end;
 
 MyReducedVector := function( R, basis_indices, M )
   local l, m, n;
     l := Length( basis_indices );
+
+    if Length( basis_indices ) = 4 then
+        l := 3;
+    fi;
+
     m := NrRows( M ) / l;
     Assert( 0, NrColumns( M ) = 1 );
     n := 1;
@@ -249,6 +306,8 @@ AddLift( cat,
     l := Length( IndeterminatesOfExteriorRing( R ) );
     
     basis_indices := standard_list_of_basis_indices( R );
+
+    Assert( 0, 2^l = Length( basis_indices ) );
     
     Q := CoefficientsRing( R ); 
 
@@ -304,6 +363,15 @@ AddLift( cat,
     
     #### my second implementation
     Display("#### my second implementation");
+
+    l := Length( basis_indices );
+    
+    if l = 4 then
+        Q := R;
+        l := 3;
+    fi;
+    
+    
     # We need to solve the system
     #     X*B + Y*N = A
     #     P*X + Z*M = 0
@@ -322,7 +390,7 @@ AddLift( cat,
     R_M := MyBlownUpMatrixRightToLeft( basis_indices, KroneckerMat( HomalgTransposedMat( M ), HomalgIdentityMatrix( NrRows( P ), R ) ) );
 
     bu_A := MyBlownUpMatrix( basis_indices, A );
-    bu_A := CertainColumns( bu_A, [ 0 .. (NrColumns( A ) - 1) ] * 4 + 1 );
+    bu_A := CertainColumns( bu_A, [ 0 .. (NrColumns( A ) - 1) ] * l + 1 );
     
     A_vec := vec( bu_A );
     
@@ -335,16 +403,16 @@ AddLift( cat,
     #     [ L_P_mod  0      R_M ]      [  vec( Z ) ]        [   0   ]
     #
     # in the underlying field Q
-    
+
     if not IsZero( N ) then
 
-        mat1 := UnionOfColumns( [ R_B, R_N, HomalgZeroMatrix( NrRows( A )*NrColumns( A )*2^l, NrRows( M )*NrRows( P )*2^l, Q ) ] );
+        mat1 := UnionOfColumns( [ R_B, R_N, HomalgZeroMatrix( NrRows( A )*NrColumns( A )*l, NrRows( M )*NrRows( P )*l, Q ) ] );
     
-        mat2 := UnionOfColumns( [ L_P, HomalgZeroMatrix( NrRows( P )*NrColumns( M )*2^l, NrRows( N )*NrColumns( P )*2^l, Q ), R_M ] );
+        mat2 := UnionOfColumns( [ L_P, HomalgZeroMatrix( NrRows( P )*NrColumns( M )*l, NrRows( N )*NrColumns( P )*l, Q ), R_M ] );
     
     else
         
-        mat1 := UnionOfColumns( R_B, HomalgZeroMatrix( NrRows( A )*NrColumns( A )*2^l, NrRows( M )*NrRows( P )*2^l, Q ) );
+        mat1 := UnionOfColumns( R_B, HomalgZeroMatrix( NrRows( A )*NrColumns( A )*l, NrRows( M )*NrRows( P )*l, Q ) );
     
         mat2 := UnionOfColumns( L_P, R_M );
     
@@ -352,7 +420,7 @@ AddLift( cat,
 
     mat := UnionOfRows( mat1, mat2 );
      
-    A_vec_over_zero_vec := UnionOfRows( A_vec, HomalgZeroMatrix( NrColumns( M )*NrRows( P )*2^l, 1, Q ) );
+    A_vec_over_zero_vec := UnionOfRows( A_vec, HomalgZeroMatrix( NrColumns( M )*NrRows( P )*l, 1, Q ) );
 
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " system of equations" ) );
     # Display( mat );
@@ -364,7 +432,7 @@ AddLift( cat,
     Display( sol_2 );
     
     if sol_2 <> fail then
-        XX2 := CertainRows( sol_2, [ 1 .. s*v*2^l ] );
+        XX2 := CertainRows( sol_2, [ 1 .. s*v*l ] );
 
         vec_X_2 := MyReducedVector( R, basis_indices, XX2 );
         
@@ -377,6 +445,10 @@ AddLift( cat,
     
     #### Kamal's implementation
     Display("#### Kamal's implementation");
+
+    Q := CoefficientsRing( R );
+    l := Length( IndeterminatesOfExteriorRing( R ) );
+    
     R_B := UnionOfRows( List( basis_indices, u-> KroneckerMat( Involution( Q*FRight( u, B ) ), HomalgIdentityMatrix( NrRows( A ), Q ) ) ) );
 
     if not IsZero( N ) then 

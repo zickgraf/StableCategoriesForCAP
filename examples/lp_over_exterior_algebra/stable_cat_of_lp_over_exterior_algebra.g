@@ -80,12 +80,12 @@ m := HomalgMatrix( "[ [ e1, e0, e1, e1*e0, e0-e1 ], [ 0, 1, e1*e0, 0, -4*e1 ], [
 m := AsLeftPresentation( m );
 M := AsStableObject( m );
 n := HomalgMatrix( "[ [ e1*e0, e0-e1 ], [ 1, e0 ], [ e1*e0, e1*e0-e0 ] ]", 3, 2, R );
-# n := HomalgMatrix( "[ [ e0*e1 ] ]", 1, 1, R );
-# n := HomalgMatrix( "[ [ e1*e0, e0-e1 ], [ 1, e0 ] ]", 3, 1, R );
+n := HomalgMatrix( "[ [ e0*e1 ] ]", 1, 1, R );
+n := HomalgMatrix( "[ [ e1*e0, e0-e1 ], [ 1, e0 ] ]", 3, 1, R );
 n := AsLeftPresentation( n );
 N := AsStableObject( n );
 p := HomalgMatrix( "[ [ 1, 0, e1+e0, 0, 0 ], [ 0, 1, e0, 0, e0*e1 ], [ 0, 0, 1, e1, e0 ] ]", 3, 5, R );
-p := HomalgMatrix( "[ [ 1, 0, 0 ], [ 0, 1, e0*e1 ] ]", 2, 3, R );
+#p := HomalgMatrix( "[ [ 1, 0, 0 ], [ 0, 1, e0*e1 ] ]", 2, 3, R );
 p := AsLeftPresentation( p );
 # P := AsStableObject( p );
 
@@ -93,7 +93,7 @@ p := AsLeftPresentation( p );
 #Assert( 0, IsZero( IdentityMorphism( M ) ) = false );
 # Assert( 0, IsZero( IdentityMorphism( N ) ) = false );
 
-p := m;
+#p := n;
 
 alpha := IdentityMorphism( p );
 beta := EpimorphismFromSomeProjectiveObject( p );
