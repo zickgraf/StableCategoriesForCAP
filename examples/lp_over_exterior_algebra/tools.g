@@ -139,6 +139,61 @@ od;
 return coeff_list;
 
 end );
+
+Join := function( list, separator )
+    local result;
+    
+    result := Flat( List( list, l -> Concatenation( l, separator ) ) );
+    
+    Remove( result, Length( result ) );
+    
+    return result;
+end;
+
+BindGlobal( "DecomposeOverCenter", function( r )
+  local R, Q, l, polynomial_vars, polynomial_ring, S, extra_var, r_in_S, part_in_center, result, e_i, part_not_containing_e_i, part_containing_e_i, i;
+    
+    R := HomalgRing( r );
+    
+    Assert( 0, IsExteriorRing( R ) );
+    
+    Q := CoefficientsRing( R );
+    
+    l := Length( IndeterminatesOfExteriorRing( R ) );
+    
+    polynomial_vars := List( [ 1 .. l + 1 ], a -> Concatenation( "x", String( a ) ) );
+    
+    polynomial_ring := Q * Join( polynomial_vars, "," );
+    
+    S := KoszulDualRing( polynomial_ring );
+    
+    extra_var := Concatenation( "e", String( l ) ) / S;
+    r_in_S := r/S;
+    
+    part_in_center := ( (r_in_S * extra_var + extra_var * r_in_S) / (2 * extra_var) ) / R;
+
+    r := r - part_in_center;
+    
+    result := [ part_in_center ];
+    
+    for i in [ 0 .. l-1 ] do
+        
+        e_i := Concatenation( "e", String( i ) ) / R;
+        
+        part_not_containing_e_i := (r * e_i) / e_i;
+        
+        part_containing_e_i := r - part_not_containing_e_i;
+        
+        Add( result, part_containing_e_i / e_i );
+        
+        r := part_not_containing_e_i;
+        
+    od;
+    
+    return result;
+    
+end );
+
                     
 KeyDependentOperation( "FLeftt", IsHomalgMatrix, IsInt, ReturnTrue );
 InstallMethod( FLefttOp, [ IsHomalgMatrix, IsInt ],
