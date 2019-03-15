@@ -150,9 +150,11 @@ Join := function( list, separator )
     return result;
 end;
 
-BindGlobal( "DecomposeOverCenter", function( r )
+BindGlobal( "DecomposeRingElementOverCenter", function( r )
   local R, Q, l, polynomial_vars, polynomial_ring, S, extra_var, r_in_S, part_in_center, result, e_i, part_not_containing_e_i, part_containing_e_i, i;
     
+    Assert( 0, false );
+  
     R := HomalgRing( r );
     
     Assert( 0, IsExteriorRing( R ) );
@@ -187,6 +189,50 @@ BindGlobal( "DecomposeOverCenter", function( r )
         Add( result, part_containing_e_i / e_i );
         
         r := part_not_containing_e_i;
+        
+    od;
+    
+    return result;
+    
+end );
+
+BindGlobal( "DecomposeMatrixOverCenter", function( M )
+  local R, Q, l, polynomial_vars, polynomial_ring, S, extra_var, r_in_S, part_in_center, result, e_i, part_not_containing_e_i, part_containing_e_i, i;
+    
+    R := HomalgRing( M );
+    
+    Assert( 0, IsExteriorRing( R ) );
+    
+    Q := CoefficientsRing( R );
+    
+    l := Length( IndeterminatesOfExteriorRing( R ) );
+    
+    polynomial_vars := List( [ 1 .. l + 1 ], a -> Concatenation( "x", String( a ) ) );
+    
+    polynomial_ring := Q * Join( polynomial_vars, "," );
+    
+    S := KoszulDualRing( polynomial_ring );
+    
+    extra_var := Concatenation( "e", String( l ) ) / S;
+    M_in_S := M * S;
+    
+    part_in_center := RightDivide( (M_in_S * extra_var + extra_var * M_in_S), HomalgDiagonalMatrix( ListWithIdenticalEntries( NrColumns( M ), 2 * extra_var ), S ) ) * R;
+
+    M := M - part_in_center;
+    
+    result := [ part_in_center ];
+    
+    for i in [ 0 .. l-1 ] do
+        
+        e_i := Concatenation( "e", String( i ) ) / R;
+        
+        part_not_containing_e_i := RightDivide( M * e_i, HomalgDiagonalMatrix( ListWithIdenticalEntries( NrColumns( M ), e_i ), R ) );
+        
+        part_containing_e_i := M - part_not_containing_e_i;
+        
+        Add( result, RightDivide( part_containing_e_i, HomalgDiagonalMatrix( ListWithIdenticalEntries( NrColumns( M ), e_i ), R ) ) );
+        
+        M := part_not_containing_e_i;
         
     od;
     
