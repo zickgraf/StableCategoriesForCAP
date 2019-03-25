@@ -574,8 +574,8 @@ AddLift( cat,
     
     sol_2 := LeftDivide( mat, A_vec_over_zero_vec );
 
-    Display( "sol_2:" );
-    Display( sol_2 );
+    # Display( "sol_2:" );
+    # Display( sol_2 );
     
     if sol_2 <> fail then
         XX2 := CertainRows( sol_2, [ 1 .. s*v*2^l ] );
@@ -652,14 +652,14 @@ AddLift( cat,
     # Display( mat );
     # Display( A_vec_over_zero_vec );
     
-    start_time := Runtimes().user_time;
+    start_time := NanosecondsSinceEpoch();
     
     sol_3 := LeftDivide( mat, A_vec_over_zero_vec );
 
-    Display( Concatenation( "solved in ", String( Runtimes().user_time - start_time ) ) );
+    Display( Concatenation( "solved in ", String( Float( ( NanosecondsSinceEpoch() - start_time) / 1000 / 1000 / 1000 ) ) ) );
 
-    Display( "sol_3:" );
-    Display( sol_3 );
+    # Display( "sol_3:" );
+    # Display( sol_3 );
     
     if sol_3 <> fail then
         XX3 := CertainRows( sol_3, [ 1 .. s*v*(l+1) ] );
@@ -731,14 +731,14 @@ AddLift( cat,
     #Display( mat );
     #Display( A_vec_over_zero_vec );
     
-    start_time := Runtimes().user_time;
+    start_time := NanosecondsSinceEpoch();
 
     sol_4 := LeftDivide( mat, A_vec_over_zero_vec );
 
-    Display( Concatenation( "solved in ", String( Runtimes().user_time - start_time ) ) );
+    Display( Concatenation( "solved in ", String( Float( ( NanosecondsSinceEpoch() - start_time ) ) / 1000 / 1000 / 1000 ) ) );
 
-    Display( "sol_4:" );
-    Display( sol_4 );
+    # Display( "sol_4:" );
+    # Display( sol_4 );
 
     if sol_4 <> fail then
         XX4 := CertainRows( sol_4, [ 1 .. s*v*2^l ] );
@@ -755,6 +755,8 @@ AddLift( cat,
     #### evaluation
     if sol_3 = fail and sol_4 = fail then 
       
+        Display( fail );
+        
       return fail;
      
     fi;
@@ -764,6 +766,7 @@ AddLift( cat,
     Assert( 0, sol_4 <> fail );
 
     X := X_3;
+    Display(X);
     
     # X := sol[1];
     # Y := sol[2];
