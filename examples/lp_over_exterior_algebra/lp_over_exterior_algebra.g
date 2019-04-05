@@ -149,7 +149,7 @@ MyBlownUpMatrixOverQ := function( basis_indices, M )
 end;
 
 MyBlownUpMatrixOverCenter := function( basis_indices, M )
-  local R, l;
+  local R, generating_system_over_center, l;
     
     # R := HomalgRing( M );
   
@@ -189,7 +189,7 @@ MyBlownUpMatrixRightToLeftOverQ := function( basis_indices, M )
 end;
 
 MyBlownUpMatrixRightToLeftOverCenter := function( basis_indices, M )
-  local R, l;
+  local R, generating_system_over_center, l;
     
     # R := HomalgRing( M );
   
@@ -310,6 +310,50 @@ MyReducedVectorOverCenter := function( R, basis_indices, M )
     return result;
 end;
 
+
+GetRelationsOverCenter := function( R, dimension )
+  local zero_relation, index_of_dth_ith_basis_vector, l, relations, relation, d, i, j, k;
+    
+    zero_relation := function()
+        return ListWithIdenticalEntries( (l + 1) * dimension, "0" );
+    end;
+  
+    index_of_dth_ith_basis_vector := function( d, i )
+        return dimension * i + d;
+    end;
+    
+    l := Length( Indeterminates( R ) );
+
+    relations := [  ];
+    
+    for d in [ 1 .. dimension ] do
+        for i in [ 1 .. l ] do
+            for j in [ 1 .. l ] do
+                if i < j then
+                    relation := zero_relation();
+                    relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( i - 1 ), "*e", String( j - 1 ) );
+                    Add( relations, relation );
+                    for k in [ 1 .. l ] do
+                        if k <> i and k <> j then
+                            relation := zero_relation();
+                            relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( k - 1 ), "*e", String( j - 1 ) );
+                            relation[index_of_dth_ith_basis_vector( d, j )] := Concatenation( "e", String( k - 1 ), "*e", String( i - 1 ) );
+                            Add( relations, relation );
+                        fi;
+                    od;
+                fi;
+                if i > j then
+                    relation := zero_relation();
+                    relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( j - 1 ), "*e", String( i - 1 ) );
+                    Add( relations, relation );
+                fi;
+            od;
+        od;
+    od;
+    
+    return relations;
+end;
+
 BindGlobal( "ADD_METHODS_TO_LEFT_PRESENTATIONS_OVER_EXTERIOR_ALGEBRA", 
 
 function( cat )
@@ -409,7 +453,7 @@ end );
 AddLift( cat, 
 
   function( morphism_1, morphism_2 )
-    local P, M, N, r, s, u, v, m, n, A, B, l, basis_indices, Q, sol, R, I_1, I_2, I_3, I_4, 0_1, 0_2, 0_3, 0_4, 0_rhs, bu_I_1, bu_I_2, bu_I_3, bu_I_4, bu_0_1, bu_0_2, bu_0_3, bu_0_4, bu_B, bu_N, bu_P, bu_M, bu_A, bu_0_rhs, R_B, R_N, L_P, R_M, A_vec, mat1, mat2, mat, A_vec_over_zero_vec, entries, sol_2, XX2, vec_X_2, X_2, l2, L_id_s, L_P_mod, A_deco, A_deco_list, A_deco_list_vec, sol_3, XX3, XX_3, X_3, l3, sol_4, XX4, XX_4, X_4, l4, X;
+    local P, M, N, r, s, u, v, m, n, A, B, R, l, basis_indices, Q, sol, R_B, R_N, L_P, R_M, bu_A, A_vec, mat1, mat2, mat, A_vec_over_zero_vec, sol_2, XX2, vec_X_2, X_2, l2, matrix_of_relations, left_coeffs, right_coeffs, start_time, sol_3, XX3, vec_X_3, X_3, l3, L_id_s, L_P_mod, A_deco, A_deco_list, A_deco_list_vec, sol_4, XX4, XX_4, X_4, l4, X;
    
     if WithComments = true then
         Print( "computing Lift of ", NrRows( UnderlyingMatrix(morphism_1) ),"x", NrColumns( UnderlyingMatrix(morphism_1) ), " & ",
@@ -648,15 +692,22 @@ AddLift( cat,
      
     A_vec_over_zero_vec := UnionOfRows( A_vec, HomalgZeroMatrix( NrColumns( M )*NrRows( P )*(l+1), 1, R ) );
 
-    Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " system of equations" ) );
-    # Display( mat );
-    # Display( A_vec_over_zero_vec );
+    Assert( 0, NrRows( mat ) = NrRows( A_vec_over_zero_vec ) );
+    
+    matrix_of_relations := HomalgMatrix( GetRelationsOverCenter( R, NrRows( mat ) / ( l + 1 ) ), R );
+    
+    left_coeffs :=  [ [ HomalgIdentityMatrix( 1, R ),  HomalgIdentityMatrix( 1, R )      ] ];
+    right_coeffs := [ [ HomalgTransposedMat( mat ),    matrix_of_relations               ] ];
+
+    Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus relations) system of equations" ) );
     
     start_time := NanosecondsSinceEpoch();
-    
-    sol_3 := LeftDivide( mat, A_vec_over_zero_vec );
 
+    sol_3 := SolveTwoSidedLinearSystem( left_coeffs, right_coeffs, [ HomalgTransposedMat( A_vec_over_zero_vec ) ] );
+    
     Display( Concatenation( "solved in ", String( Float( ( NanosecondsSinceEpoch() - start_time) / 1000 / 1000 / 1000 ) ) ) );
+
+    sol_3 := HomalgTransposedMat( sol_3[1] );
 
     # Display( "sol_3:" );
     # Display( sol_3 );
@@ -672,6 +723,7 @@ AddLift( cat,
         Assert( 0, IsWellDefined( l3 ) );
         Assert( 0, IsCongruentForMorphisms( PreCompose( l3, morphism_2 ), morphism_1 ) );
     fi;
+
     
     #### Kamal's implementation
     Display("#### Kamal's implementation");

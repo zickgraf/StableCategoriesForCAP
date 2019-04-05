@@ -197,7 +197,7 @@ BindGlobal( "DecomposeRingElementOverCenter", function( r )
 end );
 
 BindGlobal( "DecomposeMatrixOverCenter", function( M )
-  local R, Q, l, polynomial_vars, polynomial_ring, S, extra_var, r_in_S, part_in_center, result, e_i, part_not_containing_e_i, part_containing_e_i, i;
+  local R, Q, l, polynomial_vars, polynomial_ring, S, extra_var, M_in_S, part_in_center, result, e_i, part_not_containing_e_i, part_containing_e_i, i;
     
     R := HomalgRing( M );
     
