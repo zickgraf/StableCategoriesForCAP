@@ -135,7 +135,7 @@ MyBlownUpMatrixOverCenter := function( M )
     
     l := Length( Indeterminates( R ) );
 
-    return UnionOfColumns( List( generating_system_over_center, generator -> UnionOfRows( DecomposeMatrixOverCenter( M * generator ) ) ) );
+    return UnionOfRows( List( generating_system_over_center, generator -> UnionOfColumns( DecomposeMatrixOverCenter( generator * M ) ) ) );
     
 end;
 
@@ -156,7 +156,7 @@ MyBlownUpMatrixRightToLeftOverQ := function( M )
     
 end;
 
-MyBlownUpMatrixRightToLeftOverCenter := function( M )
+MyBlownUpMatrixLeftToRightOverCenter := function( M )
   local R, generating_system_over_center, l;
     
     R := HomalgRing( M );
@@ -165,7 +165,7 @@ MyBlownUpMatrixRightToLeftOverCenter := function( M )
     
     l := Length( Indeterminates( R ) );
 
-    return UnionOfColumns( List( generating_system_over_center, generator -> UnionOfRows( DecomposeMatrixOverCenter( generator * M ) ) ) );
+    return UnionOfRows( List( generating_system_over_center, generator -> UnionOfColumns( DecomposeMatrixOverCenter( M * generator ) ) ) );
     
 end;
 
@@ -252,19 +252,17 @@ MyReducedVectorOverCenter := function( R, M )
     
     l := Length( Indeterminates( R ) );
 
-    m := NrRows( M ) / (l+1);
-    Assert( 0, IsInt( m ) );
-    n := NrColumns( M );
+    m := NrRows( M );
+    n := NrColumns( M ) / (l+1);
+    Assert( 0, IsInt( n ) );
 
     if m = 0 or n = 0 then
         return HomalgZeroMatrix( m, n, R );
     fi;
 
-    # return UnionOfRows( List( [ 1 .. m ], i -> MyReducedSingleEntryOfVectorOverCenter( R, CertainRows( M, [ (i-1)*(l+1)+1 .. i*(l+1) ] ) ) ) );
-
     generating_system_over_center := GeneratingSystemOverCenter( R );
     
-    result := Sum( [ 1 .. l+1 ], i -> CertainRows( M, [ (i-1)*m+1 .. i * m ] ) * generating_system_over_center[i] );
+    result := Sum( [ 1 .. l+1 ], i -> CertainColumns( M, [ (i-1)*n+1 .. i * n ] ) * generating_system_over_center[i] );
     
     Assert( 0, NrRows( result ) = m );
     Assert( 0, NrColumns( result ) = n );
@@ -414,17 +412,15 @@ end );
 
 
 v_isom := function( A )
-    return UnionOfRows( DecomposeMatrixOverCenter( vec( A ) ) );
+    return UnionOfColumns( DecomposeMatrixOverCenter( vec_rows( A ) ) );
 end;
 
 v_isom_inv := function( X, s, v )
     R := HomalgRing( X );
     
-    basis_indices := standard_list_of_basis_indices( R );
-    
     vec_X_3 := MyReducedVectorOverCenter( R, X );
-        
-    return devec( vec_X_3, s, v );    
+    
+    return devec_rows( vec_X_3, s, v );
 end;
 
 AddLift( cat, 
@@ -622,33 +618,21 @@ AddLift( cat,
     #     P  *X*I_3 + 0_3*Y*0_4 + I_4*Z*M   = 0_rhs
     # the function is supposed to return X as a ( well defined ) morphism from P to M.
 
-    R_B := TransposedMatrix( MyBlownUpMatrixRightToLeftOverCenter( KroneckerMat( TransposedMatrix( B ), HomalgIdentityMatrix( NrRows( A ), R ) ) ) );
+    R_B := MyBlownUpMatrixOverCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), B ) );
 
     if not IsZero( N ) then 
-        R_N := TransposedMatrix( MyBlownUpMatrixRightToLeftOverCenter( KroneckerMat( TransposedMatrix( N ), HomalgIdentityMatrix( NrRows( A ), R ) ) ) );
+        R_N := MyBlownUpMatrixOverCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), N ) );
     fi;
 
-    L_P := TransposedMatrix( MyBlownUpMatrixOverCenter( KroneckerMat( HomalgIdentityMatrix( NrColumns( M ), R ), P ) ) );
+    L_P := MyBlownUpMatrixLeftToRightOverCenter( KroneckerMat( TransposedMatrix( P ), HomalgIdentityMatrix( NrColumns( M ), R ) ) );
 
-    R_M := TransposedMatrix( MyBlownUpMatrixRightToLeftOverCenter( KroneckerMat( TransposedMatrix( M ), HomalgIdentityMatrix( NrRows( P ), R ) ) ) );
+    R_M := MyBlownUpMatrixOverCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( P ), R ), M ) );
 
-    # bu_A := MyBlownUpMatrixOverCenter( A );
-    # bu_A := CertainColumns( bu_A, [ 0 .. (NrColumns( A ) - 1) ] * (l+1) + 1 );
-
-    #bu_A := UnionOfRows( DecomposeMatrixOverCenter( A ) );
+    A_vec_rows := v_isom( A );
     
-    #A_vec := vec( bu_A );
-    
-    A_vec_rows := TransposedMatrix( v_isom( A ) );
-    
-    # Now we should have 
-    # TODO
-    #   R_B     * vec( X ) + R_N * vec( Y )                  = vec_A
-    #   L_P_mod * vec( X ) +                + R_M * vec( Z ) = zero
-    
-    # or  [   R_B    R_N     0  ]      [  vec( X ) ]        [ vec_A ]
-    #     [                     ]  *   [  vec( Y ) ]   =    [       ]
-    #     [ L_P_mod  0      R_M ]      [  vec( Z ) ]        [   0   ]
+    # Now we should have
+    #   vec_rows( X ) * R_B + vec_rows( Y ) * R_N                      = A_vec_rows
+    #   vec_rows( X ) * L_P +                     + vec_row( Z ) * R_M = zero
     #
     # in Center( R )
 
@@ -686,7 +670,7 @@ AddLift( cat,
     # Display( sol_3 );
     
     if sol_3 <> fail then
-        XX3 := TransposedMatrix( CertainColumns( sol_3, [ 1 .. s*v*(l+1) ] ) );
+        XX3 := CertainColumns( sol_3, [ 1 .. s*v*(l+1) ] );
 
         X_3 := v_isom_inv( XX3, s, v );
         
