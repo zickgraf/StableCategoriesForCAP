@@ -569,15 +569,15 @@ AddLift( cat,
     #     P  *X*I_3 + 0_3*Y*0_4 + I_4*Z*M   = 0_rhs
     # the function is supposed to return X as a ( well defined ) morphism from P to M.
 
-    R_B := MyBlownUpMatrixRightToLeftOverQ( basis_indices, KroneckerMat( HomalgTransposedMat( B ), HomalgIdentityMatrix( NrRows( A ), R ) ) );
+    R_B := MyBlownUpMatrixRightToLeftOverQ( basis_indices, KroneckerMat( TransposedMatrix( B ), HomalgIdentityMatrix( NrRows( A ), R ) ) );
 
     if not IsZero( N ) then 
-        R_N := MyBlownUpMatrixRightToLeftOverQ( basis_indices, KroneckerMat( HomalgTransposedMat( N ), HomalgIdentityMatrix( NrRows( A ), R ) ) );    
+        R_N := MyBlownUpMatrixRightToLeftOverQ( basis_indices, KroneckerMat( TransposedMatrix( N ), HomalgIdentityMatrix( NrRows( A ), R ) ) );
     fi;
 
     L_P := MyBlownUpMatrixOverQ( basis_indices, KroneckerMat( HomalgIdentityMatrix( NrColumns( M ), R ), P ) );
 
-    R_M := MyBlownUpMatrixRightToLeftOverQ( basis_indices, KroneckerMat( HomalgTransposedMat( M ), HomalgIdentityMatrix( NrRows( P ), R ) ) );
+    R_M := MyBlownUpMatrixRightToLeftOverQ( basis_indices, KroneckerMat( TransposedMatrix( M ), HomalgIdentityMatrix( NrRows( P ), R ) ) );
 
     bu_A := MyBlownUpMatrixOverQ( basis_indices, A );
     bu_A := CertainColumns( bu_A, [ 0 .. (NrColumns( A ) - 1) ] * 2^l + 1 );
@@ -645,15 +645,15 @@ AddLift( cat,
     #     P  *X*I_3 + 0_3*Y*0_4 + I_4*Z*M   = 0_rhs
     # the function is supposed to return X as a ( well defined ) morphism from P to M.
 
-    R_B := MyBlownUpMatrixRightToLeftOverCenter( basis_indices, KroneckerMat( HomalgTransposedMat( B ), HomalgIdentityMatrix( NrRows( A ), R ) ) );
+    R_B := MyBlownUpMatrixRightToLeftOverCenter( basis_indices, KroneckerMat( TransposedMatrix( B ), HomalgIdentityMatrix( NrRows( A ), R ) ) );
 
     if not IsZero( N ) then 
-        R_N := MyBlownUpMatrixRightToLeftOverCenter( basis_indices, KroneckerMat( HomalgTransposedMat( N ), HomalgIdentityMatrix( NrRows( A ), R ) ) );    
+        R_N := MyBlownUpMatrixRightToLeftOverCenter( basis_indices, KroneckerMat( TransposedMatrix( N ), HomalgIdentityMatrix( NrRows( A ), R ) ) );
     fi;
 
     L_P := MyBlownUpMatrixOverCenter( basis_indices, KroneckerMat( HomalgIdentityMatrix( NrColumns( M ), R ), P ) );
 
-    R_M := MyBlownUpMatrixRightToLeftOverCenter( basis_indices, KroneckerMat( HomalgTransposedMat( M ), HomalgIdentityMatrix( NrRows( P ), R ) ) );
+    R_M := MyBlownUpMatrixRightToLeftOverCenter( basis_indices, KroneckerMat( TransposedMatrix( M ), HomalgIdentityMatrix( NrRows( P ), R ) ) );
 
     # bu_A := MyBlownUpMatrixOverCenter( basis_indices, A );
     # bu_A := CertainColumns( bu_A, [ 0 .. (NrColumns( A ) - 1) ] * (l+1) + 1 );
@@ -697,22 +697,26 @@ AddLift( cat,
     matrix_of_relations := HomalgMatrix( GetRelationsOverCenter( R, NrRows( mat ) / ( l + 1 ) ), R );
     
     left_coeffs :=  [ [ HomalgIdentityMatrix( 1, R ),  HomalgIdentityMatrix( 1, R )      ] ];
-    right_coeffs := [ [ HomalgTransposedMat( mat ),    matrix_of_relations               ] ];
+    right_coeffs := [ [ TransposedMatrix( mat ),       matrix_of_relations               ] ];
 
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus relations) system of equations" ) );
     
     start_time := NanosecondsSinceEpoch();
 
-    sol_3 := SolveTwoSidedLinearSystem( left_coeffs, right_coeffs, [ HomalgTransposedMat( A_vec_over_zero_vec ) ] );
+    # sol_3 := SolveTwoSidedLinearSystem( left_coeffs, right_coeffs, [ TransposedMatrix( A_vec_over_zero_vec ) ] );
     
+    sol_3 := RightDivide( TransposedMatrix( A_vec_over_zero_vec ), UnionOfRows( TransposedMatrix( mat ), matrix_of_relations ) );
+
     Display( Concatenation( "solved in ", String( Float( ( NanosecondsSinceEpoch() - start_time) / 1000 / 1000 / 1000 ) ) ) );
 
-    sol_3 := HomalgTransposedMat( sol_3[1] );
+    # sol_3 := TransposedMatrix( sol_3[1] );
 
     # Display( "sol_3:" );
     # Display( sol_3 );
     
     if sol_3 <> fail then
+        sol_3 := TransposedMatrix( CertainColumns( sol_3, [ 1 .. NrColumns( mat ) ] ) );
+
         XX3 := CertainRows( sol_3, [ 1 .. s*v*(l+1) ] );
 
         vec_X_3 := MyReducedVectorOverCenter( R, basis_indices, XX3 );
@@ -1023,9 +1027,9 @@ compute_coefficients := function( b, f )
         List( [ 1 .. Length( basis_indices) ], 
         function( i ) 
         local current_A, current_B, current_C, main;
-        current_A := List( A, a -> HomalgTransposedMat( DecompositionOfHomalgMat(a)[i][2]*Q ) );
-        current_B := HomalgTransposedMat( FRight( basis_indices[i], B )*Q );
-        current_C := HomalgTransposedMat( DecompositionOfHomalgMat(C)[i][2]*Q );
+        current_A := List( A, a -> TransposedMatrix( DecompositionOfHomalgMat(a)[i][2]*Q ) );
+        current_B := TransposedMatrix( FRight( basis_indices[i], B )*Q );
+        current_C := TransposedMatrix( DecompositionOfHomalgMat(C)[i][2]*Q );
         main := UnionOfColumns( Iterated( List( current_A, vec ), UnionOfColumns ), KroneckerMat( HomalgIdentityMatrix( NrColumns( current_C ), Q ), current_B ) ); 
         return [ main, vec( current_C) ];
         end );

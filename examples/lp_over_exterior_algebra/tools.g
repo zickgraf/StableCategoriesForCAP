@@ -6,21 +6,6 @@ DeclareGlobalVariable( "WithComments" );
 MakeReadWriteGlobal("WithComments");
 
 ##
-DeclareOperation( "HomalgTransposedMat", 
-                  [ IsHomalgMatrix ] );
-InstallMethod( HomalgTransposedMat, 
-                [ IsHomalgMatrix ], 
-function( M )
-
-  if NrRows( M ) = 0 or NrColumns( M ) = 0 then
-      return HomalgZeroMatrix( NrColumns( M ), NrRows( M ), HomalgRing( M ) );
-  fi;
-    
-  return HomalgMatrix( String( TransposedMat( EntriesOfHomalgMatrixAsListList( M ) ) ), NrColumns( M ), NrRows( M ), HomalgRing( M ) );
-
-end );
-
-##
 DeclareAttribute( "standard_list_of_basis_indices", IsHomalgRing );
 InstallMethod( standard_list_of_basis_indices,
                 [ IsHomalgRing and IsExteriorRing ],
