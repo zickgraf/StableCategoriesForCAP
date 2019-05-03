@@ -221,10 +221,36 @@ BindGlobal( "DecomposeMatrixOverCenter", function( M )
         
     od;
     
-    return result;
+    return UnionOfColumns( result );
     
 end );
 
+BindGlobal( "DecomposeMatrixOverQ", function( M )
+  local R, Q, l, polynomial_vars, polynomial_ring, S, extra_var, M_in_S, part_in_center, result, e_i, part_not_containing_e_i, part_containing_e_i, i;
+    
+    R := HomalgRing( M );
+    
+    Assert( 0, IsExteriorRing( R ) );
+    
+    Q := CoefficientsRing( R );
+    
+    l := Length( IndeterminatesOfExteriorRing( R ) );
+    
+    result := [];
+    
+    for k in [ 0 .. l ] do
+        for comb in Combinations( [ 0 .. l-1 ], k ) do
+            generator := Concatenation( "1", Concatenation( List( comb, i -> Concatenation( "*e", String( i ) ) ) ) ) / R;
+            adversary := Concatenation( "1", Concatenation( List( Difference( [ 0 .. l-1 ], comb ), i -> Concatenation( "*e", String( i ) ) ) ) ) / R;
+            current_part := RightDivide( M * adversary, HomalgDiagonalMatrix( ListWithIdenticalEntries( NrColumns( M ), adversary ), R ) );
+            Add( result, RightDivide( current_part, HomalgDiagonalMatrix( ListWithIdenticalEntries( NrColumns( M ), generator ), R ) ) * Q );
+            M := M - current_part;
+        od;
+    od;
+
+    return UnionOfColumns( result );
+    
+end );
                     
 KeyDependentOperation( "FLeftt", IsHomalgMatrix, IsInt, ReturnTrue );
 InstallMethod( FLefttOp, [ IsHomalgMatrix, IsInt ],

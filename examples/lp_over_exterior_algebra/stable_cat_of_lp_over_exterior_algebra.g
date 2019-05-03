@@ -86,6 +86,8 @@ n := AsLeftPresentation( n );
 N := AsStableObject( n );
 p := HomalgMatrix( "[ [ 1, 0, e1+e0, 0, 0 ], [ 0, 1, e0, 0, e0*e1 ], [ 0, 0, 1, e1, e0 ] ]", 3, 5, R );
 #p := HomalgMatrix( "[ [ 1, 0, 0 ], [ 0, 1, e0*e1 ] ]", 2, 3, R );
+p := HomalgMatrix( "[ [ 2, 3 ], [ 5*e0*e1, 7 ] ]", 2, 2, R ); #TODO
+p := HomalgMatrix( "[ [ e0*e1, 1 ] ]", 1, 2, R ); #TODO
 p := AsLeftPresentation( p );
 # P := AsStableObject( p );
 
