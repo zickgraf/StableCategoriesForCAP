@@ -5,7 +5,10 @@ ReadPackage( "StableCategoriesForCAP", "/examples/lp_over_exterior_algebra/tools
 ###########################################
 # center
 
-GeneratingSystemOverCenter := function( R )
+
+DeclareAttribute( "GeneratingSystemOverCenter", IsHomalgRing );
+
+InstallMethod( GeneratingSystemOverCenter, [ IsHomalgRing ], function( R )
   local generating_system, l, i;
     
     generating_system := [ Identity( R ) ];
@@ -18,7 +21,7 @@ GeneratingSystemOverCenter := function( R )
     
     return generating_system;
     
-end;
+end );
 
 MyBlownUpMatrixOverCenter := function( M )
   local R, generating_system_over_center, l;
@@ -115,7 +118,9 @@ end;
 ###########################################
 # over Q
 
-GeneratingSystemOverQ := function( R )
+DeclareAttribute( "GeneratingSystemOverQ", IsHomalgRing );
+
+InstallMethod( GeneratingSystemOverQ, [ IsHomalgRing ], function( R )
   local generating_system, l, i;
     
     generating_system := [ ];
@@ -130,7 +135,7 @@ GeneratingSystemOverQ := function( R )
     
     return generating_system;
     
-end;
+end );
 
 MyBlownUpMatrixOverQ := function( M )
   local R, generating_system_over_Q, l;
@@ -173,7 +178,7 @@ MyReducedVectorOverQ := function( R, M )
 
     generating_system_over_Q := GeneratingSystemOverQ( R );
     
-    result := Sum( [ 1 .. l+1 ], i -> ( CertainColumns( M, [ (i-1)*n+1 .. i * n ] ) * R ) * generating_system_over_Q[i] );
+    result := Sum( [ 1 .. 2^l ], i -> ( CertainColumns( M, [ (i-1)*n+1 .. i * n ] ) * R ) * generating_system_over_Q[i] );
     
     Assert( 0, NrRows( result ) = m );
     Assert( 0, NrColumns( result ) = n );
@@ -514,9 +519,7 @@ AddLift( cat,
 
     R_B := MyBlownUpMatrixOverCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), B ) );
 
-    if not IsZero( N ) then 
-        R_N := MyBlownUpMatrixOverCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), N ) );
-    fi;
+    R_N := MyBlownUpMatrixOverCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), N ) );
 
     L_P := MyBlownUpMatrixLeftToRightOverCenter( KroneckerMat( TransposedMatrix( P ), HomalgIdentityMatrix( NrColumns( M ), R ) ) );
 
@@ -530,27 +533,21 @@ AddLift( cat,
     #
     # in Center( R )
 
-    if not IsZero( N ) then
+    mat1 := UnionOfRows( [ R_B, R_N, HomalgZeroMatrix( NrRows( M )*NrRows( P )*(l+1), NrRows( A )*NrColumns( A )*(l+1) , R ) ] );
 
-        mat1 := UnionOfRows( [ R_B, R_N, HomalgZeroMatrix( NrRows( M )*NrRows( P )*(l+1), NrRows( A )*NrColumns( A )*(l+1) , R ) ] );
+    mat2 := UnionOfRows( [ L_P, HomalgZeroMatrix( NrRows( N )*NrColumns( P )*(l+1), NrRows( P )*NrColumns( M )*(l+1), R ), R_M ] );
     
-        mat2 := UnionOfRows( [ L_P, HomalgZeroMatrix( NrRows( N )*NrColumns( P )*(l+1), NrRows( P )*NrColumns( M )*(l+1), R ), R_M ] );
-    
-    else
-        
-        mat1 := UnionOfRows( R_B, HomalgZeroMatrix( NrRows( M )*NrRows( P )*(l+1), NrRows( A )*NrColumns( A )*(l+1), R ) );
-    
-        mat2 := UnionOfRows( L_P, R_M );
-    
-    fi;
-
     mat := UnionOfColumns( mat1, mat2 );
      
     A_vec_rows_zero_vec := UnionOfColumns( A_vec_rows, HomalgZeroMatrix( 1, NrColumns( M )*NrRows( P )*(l+1), R ) );
 
     Assert( 0, NrColumns( mat ) = NrColumns( A_vec_rows_zero_vec ) );
     
-    matrix_of_relations := GetMatrixOfRelationsOverCenter( R, NrColumns( mat ) / ( l + 1 ) );
+    matrix_of_relations1 := GetMatrixOfRelationsOverCenter( R, NrColumns( mat1 ) / ( l + 1 ) );
+
+    matrix_of_relations2 := GetMatrixOfRelationsOverCenter( R, NrColumns( mat2 ) / ( l + 1 ) );
+
+    matrix_of_relations := DiagMat( [ matrix_of_relations1, matrix_of_relations2 ] );
     
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus relations) system of equations" ) );
 
@@ -625,8 +622,12 @@ AddLift( cat,
 
     Assert( 0, NrColumns( mat ) = NrColumns( A_vec_rows_zero_vec ) );
     
-    matrix_of_relations := GetMatrixOfRelationsOverQ( R, NrColumns( mat ) / ( 2^l ) );
-    
+    matrix_of_relations1 := GetMatrixOfRelationsOverQ( R, NrColumns( mat1 ) / ( 2^l ) );
+
+    matrix_of_relations2 := GetMatrixOfRelationsOverQ( R, NrColumns( mat2 ) / ( 2^l ) );
+
+    matrix_of_relations := DiagMat( [ matrix_of_relations1, matrix_of_relations2 ] );
+
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus relations) system of equations" ) );
 
     sol_3 := RightDivide( A_vec_rows_zero_vec, UnionOfRows( mat, matrix_of_relations ) );
@@ -740,7 +741,7 @@ AddLift( cat,
     Assert( 0, sol_3 <> fail );
     Assert( 0, sol_4 <> fail );
 
-    X := X_3;
+    X := X_4;
     Display(X);
     
     # X := sol[1];
