@@ -251,7 +251,124 @@ BindGlobal( "DecomposeMatrixOverQ", function( M )
     return UnionOfColumns( result );
     
 end );
-                    
+
+BindGlobal( "MatrixOverRToRealCenter", function( M )
+  local entries, new_entries, new_entry, found_e, result, entry, char;
+
+    if NrRows( M ) = 0 or NrColumns( M ) = 0 then
+        return HomalgZeroMatrix( NrRows( M ), NrColumns( M ), RealCenter ); 
+    fi;
+  
+    # Error("start MatrixOverRToRealCenter");
+  
+    # old implementation
+    # entries := EntriesOfHomalgMatrix( M );
+    # 
+    # new_entries := [];
+    # 
+    # for entry in entries do
+    #     new_entry := [];
+    #     found_e := false;
+    #     for char in String( entry ) do
+    #         if char = 'e' then
+    #             found_e := not found_e;
+    #         fi;
+    #         # strip '*' between two e's
+    #         if not (found_e and char = '*') then
+    #             Add( new_entry, char );
+    #         fi;
+    #     od;
+    #     Add( new_entries, new_entry / RealCenter );
+    # od;
+    # 
+    # result_old := HomalgMatrix( new_entries, NrRows( M ), NrColumns( M ), RealCenter );
+    
+    # new implementation
+    entries := GetListOfHomalgMatrixAsString( M );
+    
+    new_entries := [];
+    
+    found_e := false;
+    for char in String( entries ) do
+        if char = 'e' then
+            found_e := not found_e;
+        fi;
+        # strip '*' between two e's
+        if not (found_e and char = '*') then
+            Add( new_entries, char );
+        fi;
+    od;
+    
+    result := HomalgMatrix( new_entries, NrRows( M ), NrColumns( M ), RealCenter );
+    
+    # Error("finished MatrixOverRToRealCenter");
+    
+
+    return result;
+    
+end );
+
+BindGlobal( "MatrixOverRealCenterToR", function( M )
+  local entries, new_entries, new_entry, found_e, result, entry, char;
+
+    if NrRows( M ) = 0 or NrColumns( M ) = 0 then
+        return HomalgZeroMatrix( NrRows( M ), NrColumns( M ), R ); 
+    fi;
+  
+    # old implementation
+    entries := EntriesOfHomalgMatrix( M );
+    
+    new_entries := [];
+    
+    for entry in entries do
+        new_entry := [];
+        found_e := false;
+        for char in String( entry ) do
+            if char = 'e' then
+                # add '*' between two e's
+                if found_e then
+                    Add( new_entry, '*' );
+                fi;
+                found_e := not found_e;
+            fi;
+            Add( new_entry, char );
+        od;
+        Add( new_entries, new_entry / R );
+    od;
+    
+    result_old := HomalgMatrix( new_entries, NrRows( M ), NrColumns( M ), R );
+
+    # new implementation
+    entries := GetListOfHomalgMatrixAsString( M );
+    
+    new_entries := [];
+    
+    found_e := false;
+    for char in String( entries ) do
+        if char = 'e' then
+            # add '*' between two e's
+            if found_e then
+                Add( new_entries, '*' );
+            fi;
+            found_e := not found_e;
+        fi;
+        Add( new_entries, char );
+    od;
+    
+    result := HomalgMatrix( new_entries, NrRows( M ), NrColumns( M ), R );
+    
+    Assert( 0, result_old = result );
+    
+    return result;
+    
+end );
+
+BindGlobal( "DecomposeMatrixOverRealCenter", function( M )
+
+    return MatrixOverRToRealCenter( DecomposeMatrixOverCenter( M ) );
+    
+end );
+
 KeyDependentOperation( "FLeftt", IsHomalgMatrix, IsInt, ReturnTrue );
 InstallMethod( FLefttOp, [ IsHomalgMatrix, IsInt ],
 function( A, m )

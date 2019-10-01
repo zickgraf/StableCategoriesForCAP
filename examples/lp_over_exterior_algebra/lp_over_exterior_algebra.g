@@ -2,6 +2,9 @@
 LoadPackage( "FrobeniusCategoriesForCAP" );
 ReadPackage( "StableCategoriesForCAP", "/examples/lp_over_exterior_algebra/tools.g" );
 
+
+RealCenter := fail;
+
 ###########################################
 # center
 
@@ -196,6 +199,128 @@ GetMatrixOfRelationsOverQ := function( R, dimension )
     return HomalgZeroMatrix( 0, (2^l) * dimension, Q );
 end;
 
+###########################################
+# real center
+
+
+DeclareAttribute( "GeneratingSystemOverRealCenter", IsHomalgRing );
+
+InstallMethod( GeneratingSystemOverRealCenter, [ IsHomalgRing ], function( R )
+  local generating_system, l, i;
+    
+    generating_system := [ Identity( R ) ];
+    
+    l := Length( Indeterminates( R ) );
+
+    for i in [ 0 .. l-1 ] do
+        Add( generating_system, Concatenation( "e", String( i ) ) / R );
+    od;
+    
+    return generating_system;
+    
+end );
+
+MyBlownUpMatrixOverRealCenter := function( M )
+  local R, generating_system_over_center, l;
+    
+    R := HomalgRing( M );
+    
+    generating_system_over_center := GeneratingSystemOverRealCenter( R );
+    
+    l := Length( Indeterminates( R ) );
+
+    return UnionOfRows( List( generating_system_over_center, generator -> DecomposeMatrixOverRealCenter( generator * M ) ) );
+    
+end;
+
+MyBlownUpMatrixLeftToRightOverRealCenter := function( M )
+  local R, generating_system_over_center, l;
+    
+    R := HomalgRing( M );
+    
+    generating_system_over_center := GeneratingSystemOverRealCenter( R );
+    
+    l := Length( Indeterminates( R ) );
+
+    return UnionOfRows( List( generating_system_over_center, generator -> DecomposeMatrixOverRealCenter( M * generator ) ) );
+    
+end;
+
+MyReducedVectorOverRealCenter := function( R, M )
+  local l, m, n, generating_system_over_center, result;
+    
+    l := Length( Indeterminates( R ) );
+
+    m := NrRows( M );
+    n := NrColumns( M ) / (l+1);
+    Assert( 0, IsInt( n ) );
+
+    if m = 0 or n = 0 then
+        return HomalgZeroMatrix( m, n, R );
+    fi;
+
+    generating_system_over_center := GeneratingSystemOverRealCenter( R );
+
+    M := MatrixOverRealCenterToR( M );
+    
+    result := Sum( [ 1 .. l+1 ], i -> CertainColumns( M, [ (i-1)*n+1 .. i * n ] ) * generating_system_over_center[i] );
+    
+    Assert( 0, NrRows( result ) = m );
+    Assert( 0, NrColumns( result ) = n );
+
+    return result;
+end;
+
+GetMatrixOfRelationsOverRealCenter := function( R, dimension )
+  local zero_relation, index_of_dth_ith_basis_vector, l, relations, relation, d, i, j, k;
+    
+    zero_relation := function()
+        return ListWithIdenticalEntries( (l + 1) * dimension, "0" );
+    end;
+  
+    index_of_dth_ith_basis_vector := function( d, i )
+        return dimension * i + d;
+    end;
+    
+    l := Length( Indeterminates( R ) );
+
+    relations := [  ];
+    
+    for d in [ 1 .. dimension ] do
+        for i in [ 1 .. l ] do
+            for j in [ 1 .. l ] do
+                if i < j then
+                    relation := zero_relation();
+                    relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( i - 1 ), "e", String( j - 1 ) );
+                    Add( relations, relation );
+                    for k in [ 1 .. l ] do
+                        if k <> i and k <> j then
+                            relation := zero_relation();
+                            if k < j then
+                                relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( k - 1 ), "e", String( j - 1 ) );
+                            else
+                                relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "-e", String( j - 1 ), "e", String( k - 1 ) );
+                            fi;
+                            if k < i then
+                                relation[index_of_dth_ith_basis_vector( d, j )] := Concatenation( "e", String( k - 1 ), "e", String( i - 1 ) );
+                            else
+                                relation[index_of_dth_ith_basis_vector( d, j )] := Concatenation( "-e", String( i - 1 ), "e", String( k - 1 ) );
+                            fi;
+                            Add( relations, relation );
+                        fi;
+                    od;
+                fi;
+                if i > j then
+                    relation := zero_relation();
+                    relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( j - 1 ), "e", String( i - 1 ) );
+                    Add( relations, relation );
+                fi;
+            od;
+        od;
+    od;
+    
+    return HomalgMatrix( relations, Length( relations ), (l + 1) * dimension, RealCenter );
+end;
 ################################
 
 BindGlobal( "ADD_METHODS_TO_LEFT_PRESENTATIONS_OVER_EXTERIOR_ALGEBRA", 
@@ -299,11 +424,11 @@ v_isom_center := function( A )
 end;
 
 v_isom_inv_center := function( R, X, s, v )
-  local vec_X_3;
+  local vec_X;
     
-    vec_X_3 := MyReducedVectorOverCenter( R, X );
+    vec_X := MyReducedVectorOverCenter( R, X );
     
-    return devec_rows( vec_X_3, s, v );
+    return devec_rows( vec_X, s, v );
 end;
 
 v_isom_Q := function( A )
@@ -311,11 +436,23 @@ v_isom_Q := function( A )
 end;
 
 v_isom_inv_Q := function( R, X, s, v )
-  local vec_X_3;
+  local vec_X;
     
-    vec_X_3 := MyReducedVectorOverQ( R, X );
+    vec_X := MyReducedVectorOverQ( R, X );
 
-    return devec_rows( vec_X_3, s, v );
+    return devec_rows( vec_X, s, v );
+end;
+
+v_isom_real_center := function( A )
+    return DecomposeMatrixOverRealCenter( vec_rows( A ) );
+end;
+
+v_isom_inv_real_center := function( R, X, s, v )
+  local vec_X;
+    
+    vec_X := MyReducedVectorOverRealCenter( R, X );
+    
+    return devec_rows( vec_X, s, v );
 end;
 
 AddLift( cat, 
@@ -323,6 +460,8 @@ AddLift( cat,
   function( morphism_1, morphism_2 )
     local P, M, N, r, s, u, v, m, n, A, B, R, l, basis_indices, Q, sol, R_B, R_N, L_P, R_M, bu_A, A_vec, mat1, mat2, mat, A_vec_over_zero_vec, sol_2, XX2, vec_X_2, X_2, l2, matrix_of_relations, left_coeffs, right_coeffs, start_time, sol_3, XX3, vec_X_3, X_3, l3, L_id_s, L_P_mod, A_deco, A_deco_list, A_deco_list_vec, sol_4, XX4, XX_4, X_4, l4, X;
    
+    DeactivateToDoList();
+    
     if WithComments = true then
         Print( "computing Lift of ", NrRows( UnderlyingMatrix(morphism_1) ),"x", NrColumns( UnderlyingMatrix(morphism_1) ), " & ",
                 NrRows( UnderlyingMatrix(morphism_2) ),"x", NrColumns( UnderlyingMatrix(morphism_2) ), "\n" );
@@ -506,7 +645,7 @@ AddLift( cat,
     #### my third implementation
     Display("#### my third implementation");
 
-    if true then
+    if false then
     
     start_time := NanosecondsSinceEpoch();
 
@@ -550,8 +689,15 @@ AddLift( cat,
     matrix_of_relations := DiagMat( [ matrix_of_relations1, matrix_of_relations2 ] );
     
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus relations) system of equations" ) );
-
+    # voidm := HomalgVoidMatrix( R );
+    # # asd := BasisOfRowsCoeff( UnionOfRows( mat, matrix_of_relations ), voidm );
+    # Eval(asd);
+    # 
+    # Error("aaaaaaaaaaaaaa");
+    
+    start_time2 := NanosecondsSinceEpoch();
     sol_3 := RightDivide( A_vec_rows_zero_vec, UnionOfRows( mat, matrix_of_relations ) );
+    Display( Concatenation( "computed RightDivide in ", String( Float( ( NanosecondsSinceEpoch() - start_time2 ) / 1000 / 1000 / 1000 ) ) ) );
 
     # Display( "sol_3:" );
     # Display( sol_3 );
@@ -566,14 +712,14 @@ AddLift( cat,
         Assert( 0, IsCongruentForMorphisms( PreCompose( l3, morphism_2 ), morphism_1 ) );
     fi;
 
-    Display( Concatenation( "computed lift in ", String( Float( ( NanosecondsSinceEpoch() - start_time) / 1000 / 1000 / 1000 ) ) ) );
+    Display( Concatenation( "computed lift in ", String( Float( ( NanosecondsSinceEpoch() - start_time ) / 1000 / 1000 / 1000 ) ) ) );
     
     fi;
     
     #### my implementation over Q
     Display("#### my implementation over Q");
 
-    if true then
+    if false then
     
     start_time := NanosecondsSinceEpoch();
 
@@ -630,25 +776,151 @@ AddLift( cat,
 
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus relations) system of equations" ) );
 
-    sol_3 := RightDivide( A_vec_rows_zero_vec, UnionOfRows( mat, matrix_of_relations ) );
+    start_time2 := NanosecondsSinceEpoch();
+    sol_4 := RightDivide( A_vec_rows_zero_vec, UnionOfRows( mat, matrix_of_relations ) );
+    Display( Concatenation( "computed RightDivide in ", String( Float( ( NanosecondsSinceEpoch() - start_time2 ) / 1000 / 1000 / 1000 ) ) ) );
 
-    # Display( "sol_3:" );
-    # Display( sol_3 );
+    # Display( "sol_4:" );
+    # Display( sol_4 );
     
-    if sol_3 <> fail then
-        XX3 := CertainColumns( sol_3, [ 1 .. s*v*(2^l) ] );
+    if sol_4 <> fail then
+        XX4 := CertainColumns( sol_4, [ 1 .. s*v*(2^l) ] );
 
-        X_3 := v_isom_inv_Q( R, XX3, s, v );
+        X_4 := v_isom_inv_Q( R, XX4, s, v );
         
-        l3 := PresentationMorphism( Source( morphism_1 ), DecideZeroRows( X_3, M ), Source( morphism_2 ) );
-        Assert( 0, IsWellDefined( l3 ) );
-        Assert( 0, IsCongruentForMorphisms( PreCompose( l3, morphism_2 ), morphism_1 ) );
+        l4 := PresentationMorphism( Source( morphism_1 ), DecideZeroRows( X_4, M ), Source( morphism_2 ) );
+        Assert( 0, IsWellDefined( l4 ) );
+        Assert( 0, IsCongruentForMorphisms( PreCompose( l4, morphism_2 ), morphism_1 ) );
     fi;
 
-    Display( Concatenation( "computed lift in ", String( Float( ( NanosecondsSinceEpoch() - start_time) / 1000 / 1000 / 1000 ) ) ) );
+    Display( Concatenation( "computed lift in ", String( Float( ( NanosecondsSinceEpoch() - start_time ) / 1000 / 1000 / 1000 ) ) ) );
     
     fi;
     
+    #### my implementation over real center
+    Display("#### my implementation over real center");
+
+    if true then
+    
+    start_time := NanosecondsSinceEpoch();
+
+    
+    indets := Indeterminates( R );
+    
+    vars := [];
+    vars_by_index := [];
+
+    for i in [ 0 .. (l-1) ] do
+        for j in [ (i+1) .. (l-1) ] do
+             Add( vars, Concatenation( "e", String(i), "e", String(j) ) );
+             Add( vars_by_index, [ i, j ] );
+        od;
+    od;
+
+    ideal := [];
+    for i in [ 1 .. Length( vars_by_index ) ] do
+        var1 := vars_by_index[ i ];
+        for j in [ (i+1) .. Length( vars_by_index ) ] do
+            var2 := vars_by_index[ j ];
+
+            if var1[1] = var2[1] then
+                result := "0";
+            else 
+                # var1[1] < var2[1]
+                if var2[1] < var1[2] then
+                    if var2[2] < var1[2] then
+                        result := Concatenation( "e", String(var1[1]), "e", String(var2[1]), "*e", String(var2[2]), "e", String(var1[2]) );
+                    elif var2[2] = var1[2] then
+                        result := "0";
+                    else
+                        # var2[2] > var1[2]
+                        result := Concatenation( "-e", String(var1[1]), "e", String(var2[1]), "*e", String(var1[2]), "e", String(var2[2]) );
+                    fi;
+                elif var2[1] = var1[2] then
+                    result := "0";
+                else
+                    # var2[1] > var1[2]
+                    result := false;
+                fi;
+            fi;
+            
+            if result <> false then
+                Add( ideal, Concatenation( "e", String(var1[1]), "e", String(var1[2]), "*e", String(var2[1]), "e", String(var2[2]), "-(", result, ")" ) );
+            fi;
+        od;
+    od;
+
+    RealCenter :=  Q*JoinStringsWithSeparator( vars, "," ) / ideal;
+    
+    # We need to solve the system
+    #     X*B + Y*N = A
+    #     P*X + Z*M = 0
+    #     I_1*X*B   + I_2*Y*N   + 0_1*Z*0_2 = A
+    #     P  *X*I_3 + 0_3*Y*0_4 + I_4*Z*M   = 0_rhs
+    # the function is supposed to return X as a ( well defined ) morphism from P to M.
+
+    R_B := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), B ) );
+
+    R_N := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), N ) );
+
+    L_P := MyBlownUpMatrixLeftToRightOverRealCenter( KroneckerMat( TransposedMatrix( P ), HomalgIdentityMatrix( NrColumns( M ), R ) ) );
+
+    R_M := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( P ), R ), M ) );
+
+    A_vec_rows := v_isom_real_center( A );
+    
+    # Now we should have
+    #   vec_rows( X ) * R_B + vec_rows( Y ) * R_N                      = A_vec_rows
+    #   vec_rows( X ) * L_P +                     + vec_row( Z ) * R_M = zero
+    #
+    # in RealCenter
+
+    mat1 := UnionOfRows( [ R_B, R_N, HomalgZeroMatrix( NrRows( M )*NrRows( P )*(l+1), NrRows( A )*NrColumns( A )*(l+1) , RealCenter ) ] );
+
+    mat2 := UnionOfRows( [ L_P, HomalgZeroMatrix( NrRows( N )*NrColumns( P )*(l+1), NrRows( P )*NrColumns( M )*(l+1), RealCenter ), R_M ] );
+    
+    mat := UnionOfColumns( mat1, mat2 );
+     
+    A_vec_rows_zero_vec := UnionOfColumns( A_vec_rows, HomalgZeroMatrix( 1, NrColumns( M )*NrRows( P )*(l+1), RealCenter ) );
+
+    Assert( 0, NrColumns( mat ) = NrColumns( A_vec_rows_zero_vec ) );
+    
+    Display("asd");
+    matrix_of_relations1 := GetMatrixOfRelationsOverRealCenter( R, NrColumns( mat1 ) / ( l + 1 ) );
+    Display("qwe");
+
+    matrix_of_relations2 := GetMatrixOfRelationsOverRealCenter( R, NrColumns( mat2 ) / ( l + 1 ) );
+
+    matrix_of_relations := DiagMat( [ matrix_of_relations1, matrix_of_relations2 ] );
+    
+    Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus ", String( NrRows( matrix_of_relations ) ), " relations) system of equations" ) );
+    # voidm := HomalgVoidMatrix( RealCenter );
+    # # asd := BasisOfRowsCoeff( UnionOfRows( mat, matrix_of_relations ), voidm );
+    # Eval(asd);
+    # 
+    # Error("aaaaaaaaaaaaaa");
+    
+    start_time2 := NanosecondsSinceEpoch();
+    sol_5 := RightDivide( A_vec_rows_zero_vec, UnionOfRows( mat, matrix_of_relations ) );
+    Display( Concatenation( "computed RightDivide in ", String( Float( ( NanosecondsSinceEpoch() - start_time2 ) / 1000 / 1000 / 1000 ) ) ) );
+
+    # Display( "sol_5:" );
+    # Display( sol_5 );
+    
+    if sol_5 <> fail then
+        XX5 := CertainColumns( sol_5, [ 1 .. s*v*(l+1) ] );
+
+        X_5 := v_isom_inv_real_center( R, XX5, s, v );
+        
+        l5 := PresentationMorphism( Source( morphism_1 ), DecideZeroRows( X_5, M ), Source( morphism_2 ) );
+        Assert( 0, IsWellDefined( l5 ) );
+        Assert( 0, IsCongruentForMorphisms( PreCompose( l5, morphism_2 ), morphism_1 ) );
+    fi;
+
+    Display( Concatenation( "computed lift in ", String( Float( ( NanosecondsSinceEpoch() - start_time ) / 1000 / 1000 / 1000 ) ) ) );
+    
+    fi;
+
     #### Kamal's implementation
     Display("#### Kamal's implementation");
 
@@ -709,27 +981,29 @@ AddLift( cat,
     #Display( mat );
     #Display( A_vec_over_zero_vec );
     
-    sol_4 := LeftDivide( mat, A_vec_over_zero_vec );
+    start_time2 := NanosecondsSinceEpoch();
+    sol_6 := LeftDivide( mat, A_vec_over_zero_vec );
+    Display( Concatenation( "computed LeftDivide in ", String( Float( ( NanosecondsSinceEpoch() - start_time2 ) / 1000 / 1000 / 1000 ) ) ) );
 
-    # Display( "sol_4:" );
-    # Display( sol_4 );
+    # Display( "sol_6:" );
+    # Display( sol_6 );
 
-    if sol_4 <> fail then
-        XX4 := CertainRows( sol_4, [ 1 .. s*v*2^l ] );
+    if sol_6 <> fail then
+        XX6 := CertainRows( sol_6, [ 1 .. s*v*2^l ] );
         
-        XX_4 := UnionOfColumns( List( [ 1 .. v*2^l ], i -> CertainRows( XX4, [ ( i - 1 )*s + 1 .. i*s ] ) ) );
+        XX_6 := UnionOfColumns( List( [ 1 .. v*2^l ], i -> CertainRows( XX6, [ ( i - 1 )*s + 1 .. i*s ] ) ) );
 
-        X_4 := Sum( List( [ 1..2^l ], i-> ( R * CertainColumns( XX_4, [ ( i - 1 )*v + 1 .. i*v ] ) )* ring_element( basis_indices[ i ], R ) ) );
+        X_6 := Sum( List( [ 1..2^l ], i-> ( R * CertainColumns( XX_6, [ ( i - 1 )*v + 1 .. i*v ] ) )* ring_element( basis_indices[ i ], R ) ) );
 
-        l4 := PresentationMorphism( Source( morphism_1 ), DecideZeroRows( X_4, M ), Source( morphism_2 ) );
-        Assert( 0, IsWellDefined( l4 ) );
-        Assert( 0, IsCongruentForMorphisms( PreCompose( l4, morphism_2 ), morphism_1 ) );
+        l6 := PresentationMorphism( Source( morphism_1 ), DecideZeroRows( X_6, M ), Source( morphism_2 ) );
+        Assert( 0, IsWellDefined( l6 ) );
+        Assert( 0, IsCongruentForMorphisms( PreCompose( l6, morphism_2 ), morphism_1 ) );
     fi;
     
     Display( Concatenation( "computed lift in ", String( Float( ( NanosecondsSinceEpoch() - start_time ) ) / 1000 / 1000 / 1000 ) ) );
 
     #### evaluation
-    if sol_3 = fail and sol_4 = fail then 
+    if sol_5 = fail and sol_6 = fail then 
       
         Display( fail );
         
@@ -738,10 +1012,12 @@ AddLift( cat,
     fi;
 
     # Assert( 0, sol_2 <> fail );
-    Assert( 0, sol_3 <> fail );
-    Assert( 0, sol_4 <> fail );
+    # Assert( 0, sol_3 <> fail );
+    # Assert( 0, sol_4 <> fail );
+    Assert( 0, sol_5 <> fail );
+    Assert( 0, sol_6 <> fail );
 
-    X := X_4;
+    X := X_5;
     Display(X);
     
     # X := sol[1];
