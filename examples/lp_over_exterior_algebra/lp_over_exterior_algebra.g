@@ -272,10 +272,10 @@ MyReducedVectorOverRealCenter := function( R, M )
 end;
 
 GetMatrixOfRelationsOverRealCenter := function( R, dimension )
-  local zero_relation, index_of_dth_ith_basis_vector, l, relations, relation, d, i, j, k;
+  local zero_relation, index_of_dth_ith_basis_vector, l, relations, relation, M, d, i, j, k;
     
     zero_relation := function()
-        return ListWithIdenticalEntries( (l + 1) * dimension, "0" );
+        return HomalgInitialMatrix( 1, (l + 1) * dimension, RealCenter );
     end;
   
     index_of_dth_ith_basis_vector := function( d, i )
@@ -291,20 +291,20 @@ GetMatrixOfRelationsOverRealCenter := function( R, dimension )
             for j in [ 1 .. l ] do
                 if i < j then
                     relation := zero_relation();
-                    relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( i - 1 ), "e", String( j - 1 ) );
+                    relation[1,index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( i - 1 ), "e", String( j - 1 ) ) / RealCenter;
                     Add( relations, relation );
                     for k in [ 1 .. l ] do
                         if k <> i and k <> j then
                             relation := zero_relation();
                             if k < j then
-                                relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( k - 1 ), "e", String( j - 1 ) );
+                                relation[1,index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( k - 1 ), "e", String( j - 1 ) ) / RealCenter;
                             else
-                                relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "-e", String( j - 1 ), "e", String( k - 1 ) );
+                                relation[1,index_of_dth_ith_basis_vector( d, i )] := Concatenation( "-e", String( j - 1 ), "e", String( k - 1 ) ) / RealCenter;
                             fi;
                             if k < i then
-                                relation[index_of_dth_ith_basis_vector( d, j )] := Concatenation( "e", String( k - 1 ), "e", String( i - 1 ) );
+                                relation[1,index_of_dth_ith_basis_vector( d, j )] := Concatenation( "e", String( k - 1 ), "e", String( i - 1 ) ) / RealCenter;
                             else
-                                relation[index_of_dth_ith_basis_vector( d, j )] := Concatenation( "-e", String( i - 1 ), "e", String( k - 1 ) );
+                                relation[1,index_of_dth_ith_basis_vector( d, j )] := Concatenation( "-e", String( i - 1 ), "e", String( k - 1 ) ) / RealCenter;
                             fi;
                             Add( relations, relation );
                         fi;
@@ -312,14 +312,25 @@ GetMatrixOfRelationsOverRealCenter := function( R, dimension )
                 fi;
                 if i > j then
                     relation := zero_relation();
-                    relation[index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( j - 1 ), "e", String( i - 1 ) );
+                    relation[1,index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( j - 1 ), "e", String( i - 1 ) ) / RealCenter;
                     Add( relations, relation );
                 fi;
             od;
         od;
     od;
+
+    M := Iterated( relations, UnionOfRowsEagerOp );
     
-    return HomalgMatrix( relations, Length( relations ), (l + 1) * dimension, RealCenter );
+    Eval( M );
+    
+    #DecideZero( Eval( M ), RealCenter );
+    
+    SetEval( M, DecideZero( Eval( M ), RealCenter ) );
+    
+    # DecideZero( A, RealCenter );
+    
+    return M;
+    # return HomalgMatrix( relations, Length( relations ), (l + 1) * dimension, RealCenter );
 end;
 ################################
 
@@ -880,34 +891,31 @@ AddLift( cat,
     mat2 := UnionOfRows( [ L_P, HomalgZeroMatrix( NrRows( N )*NrColumns( P )*(l+1), NrRows( P )*NrColumns( M )*(l+1), RealCenter ), R_M ] );
     
     mat := UnionOfColumns( mat1, mat2 );
+
      
     A_vec_rows_zero_vec := UnionOfColumns( A_vec_rows, HomalgZeroMatrix( 1, NrColumns( M )*NrRows( P )*(l+1), RealCenter ) );
 
     Assert( 0, NrColumns( mat ) = NrColumns( A_vec_rows_zero_vec ) );
     
-    Display("asd");
     matrix_of_relations1 := GetMatrixOfRelationsOverRealCenter( R, NrColumns( mat1 ) / ( l + 1 ) );
-    Display("qwe");
 
     matrix_of_relations2 := GetMatrixOfRelationsOverRealCenter( R, NrColumns( mat2 ) / ( l + 1 ) );
-
+    
     matrix_of_relations := DiagMat( [ matrix_of_relations1, matrix_of_relations2 ] );
     
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus ", String( NrRows( matrix_of_relations ) ), " relations) system of equations" ) );
-    # voidm := HomalgVoidMatrix( RealCenter );
-    # # asd := BasisOfRowsCoeff( UnionOfRows( mat, matrix_of_relations ), voidm );
-    # Eval(asd);
-    # 
-    # Error("aaaaaaaaaaaaaa");
-    
+
     start_time2 := NanosecondsSinceEpoch();
     sol_5 := RightDivide( A_vec_rows_zero_vec, UnionOfRows( mat, matrix_of_relations ) );
     Display( Concatenation( "computed RightDivide in ", String( Float( ( NanosecondsSinceEpoch() - start_time2 ) / 1000 / 1000 / 1000 ) ) ) );
 
     # Display( "sol_5:" );
     # Display( sol_5 );
-    
-    if sol_5 <> fail then
+
+    if sol_5 = fail then
+        Display( "there exists no lift" );
+    else
+        Display( "there exists a lift" );
         XX5 := CertainColumns( sol_5, [ 1 .. s*v*(l+1) ] );
 
         X_5 := v_isom_inv_real_center( R, XX5, s, v );
@@ -926,26 +934,36 @@ AddLift( cat,
 
     start_time := NanosecondsSinceEpoch();
 
+    Display("asd1");
     R_B := UnionOfRows( List( basis_indices, u-> KroneckerMat( Involution( Q*FRight( u, B ) ), HomalgIdentityMatrix( NrRows( A ), Q ) ) ) );
 
+    Display("asd2");
     if not IsZero( N ) then 
         R_N := UnionOfRows( List( basis_indices, u-> KroneckerMat( Involution( Q*FRight( u, N ) ), HomalgIdentityMatrix( NrRows( A ), Q ) ) ) );    
     fi;
 
+    Display("asd3");
     L_P := UnionOfRows( List( basis_indices, u-> KroneckerMat( HomalgIdentityMatrix( NrColumns( M ), Q ), Q*FLeft( u, P ) ) ) );
 
+    Display("asd4");
     R_M := UnionOfRows( List( basis_indices, u-> KroneckerMat( Involution( Q*FRight( u, M ) ), HomalgIdentityMatrix( NrRows( P ), Q ) ) ) );
 
+    Display("asd5");
     L_id_s := UnionOfRows( List( basis_indices, u-> KroneckerMat( HomalgIdentityMatrix( NrRows( B ), Q ), Q*FLeft( u, HomalgIdentityMatrix( NrRows( A ), R ) ) ) ) );
 
+    Display("asd6");
     L_P_mod := L_P * Involution( L_id_s );
 
+    Display("asd7");
     A_deco := DecompositionOfHomalgMat( A );
    
+    Display("asd8");
     A_deco_list := List( A_deco, i-> i[ 2 ] );
 
+    Display("asd9");
     A_deco_list_vec := List( A_deco_list, mat -> UnionOfRows( List( [ 1..NrColumns( A ) ], i-> CertainColumns( mat, [ i ] ) ) ) );
 
+    Display("asd10");
     A_vec := Q*UnionOfRows( A_deco_list_vec );
     
     
