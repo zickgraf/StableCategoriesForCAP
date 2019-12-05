@@ -3,6 +3,7 @@ mymat_string := "1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 # "
 
+LoadPackage( "MonoidalCategories" );
 LoadPackage( "StableCategoriesForCAP" );
 ReadPackage( "StableCategoriesForCAP", "/examples/lp_over_exterior_algebra/lp_over_exterior_algebra.g" );
 
@@ -72,7 +73,7 @@ WithComments := false;
 
 #homalgIOMode( "f" );
 
-R := KoszulDualRing( HomalgFieldOfRationalsInSingular()*"x,y,z,a,b,c" );
+R := KoszulDualRing( HomalgFieldOfRationalsInSingular()*"x,y" );
 
 
 A_vec_rows_zero_vec := HomalgMatrix( "[ 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]", 1, 216, R );
@@ -164,7 +165,7 @@ seed := NanosecondsSinceEpoch();
 #seed := 1556289592184102000;
 #seed := 1556878084181123000;
 #seed := 1556896002067248000;
-#seed := 1557232798138627000; # 3 Variablen, Komplexität 6?, long running
+#seed := 1557232798138627000; # 3 Variablen, Komplexität 6, long running
 #seed := 1557235646883591000;
 #seed := 1557235952514826000;
 #seed := 1569594877157026000; # 6 Variablen, Komplexität 6, schneller als Kamal
@@ -172,11 +173,18 @@ seed := NanosecondsSinceEpoch();
 #seed := 1569595056555501000; # 8 Variablen, Komplexität 6 schneller als Kamal?
 #seed := 1569943402902090000; # 8 Variablen, Komplexität 6 small but long running (30s), not finishing for Kamal, check again
 #p := AsLeftPresentation( HomalgMatrix( "[ [ 2*e1, 1 ] ]", 2, 1, R ) ); # für viele Variablen deutlich schneller als Kamal
-seed := 1569944396532952000; # 6 Variablen, Komplexität 6, ich: 4s Aufbau, 35s Lift; Kamal: 19s Aufbau, 1s Lift
-#seed := 1569944607828552000; # 6 Variablen, Komplexität 6, ich: 3s Aufbau, 12s Lift; Kamal: 18s Aufbau, 1s Lift
+#seed := 1569944396532952000; # 6 Variablen, Komplexität 3, ich: 4s Aufbau, 35s Lift; Kamal: 19s Aufbau, 1s Lift
+#seed := 1569944607828552000; # 6 Variablen, Komplexität 3, ich: 3s Aufbau, 12s Lift; Kamal: 18s Aufbau, 1s Lift
+#seed := 1570193383238830000; # 2 Var, Komplexität 20, exists lift
+#seed := 1570193489141308000; # 2 Var, Komplexität 20, exists lift
+seed := 1570193646279951000; # 2 Var, Komplexität 20, Kamal 1400x1400
+#seed := 1570193890032994000; # 2 Var, Komplexität 20, Kamal 2016x2016
+#seed := 1572273832550568000; # 8 Var, Komplexität 6: recursion depth trap
+#seed := 13896465015163; # 6 Variablen, Komplexität 6, ich: 11s Aufbaun, 60s Lift (neues Singular), Kamal: 23s Aufbau, 0.5s lift
+#seed := 20348148519320; # 2 Variablen, Komplexität 40, 5s Lift (neues + altes Singular)
 Display( seed );
 Reset( GlobalMersenneTwister, seed );
-p := RandomObject( CapCategory( p ), 6 );
+p := RandomObject( CapCategory( p ), 20 );
 
 # A := UnderlyingMatrix( p );
 # B := TransposedMatrix( A );

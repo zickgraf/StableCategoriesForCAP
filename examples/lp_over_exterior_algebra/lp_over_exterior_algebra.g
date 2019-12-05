@@ -319,6 +319,16 @@ GetMatrixOfRelationsOverRealCenter := function( R, dimension )
         od;
     od;
 
+    # recursion depth trap
+    # Display("got here1");
+    # M := UnionOfColumns( relations );
+    # Error("asd");
+    # Display("got here2");
+    # Eval( M );
+    # Display("got here3");
+    # 
+    # return M;
+
     M := Iterated( relations, UnionOfRowsEagerOp );
     
     Eval( M );
@@ -831,6 +841,9 @@ AddLift( cat,
     ideal := [];
     for i in [ 1 .. Length( vars_by_index ) ] do
         var1 := vars_by_index[ i ];
+
+        Add( ideal, Concatenation( "e", String(var1[1]), "e", String(var1[2]), "^2" ) );
+        
         for j in [ (i+1) .. Length( vars_by_index ) ] do
             var2 := vars_by_index[ j ];
 
@@ -862,7 +875,7 @@ AddLift( cat,
     od;
 
     RealCenter :=  Q*JoinStringsWithSeparator( vars, "," ) / ideal;
-    
+
     # We need to solve the system
     #     X*B + Y*N = A
     #     P*X + Z*M = 0
@@ -870,14 +883,19 @@ AddLift( cat,
     #     P  *X*I_3 + 0_3*Y*0_4 + I_4*Z*M   = 0_rhs
     # the function is supposed to return X as a ( well defined ) morphism from P to M.
 
+    Display("asd1");
     R_B := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), B ) );
 
+    Display("asd2");
     R_N := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), N ) );
 
+    Display("asd3");
     L_P := MyBlownUpMatrixLeftToRightOverRealCenter( KroneckerMat( TransposedMatrix( P ), HomalgIdentityMatrix( NrColumns( M ), R ) ) );
 
+    Display("asd4");
     R_M := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( P ), R ), M ) );
 
+    Display("asd5");
     A_vec_rows := v_isom_real_center( A );
     
     # Now we should have
@@ -886,23 +904,31 @@ AddLift( cat,
     #
     # in RealCenter
 
+    Display("asd6");
     mat1 := UnionOfRows( [ R_B, R_N, HomalgZeroMatrix( NrRows( M )*NrRows( P )*(l+1), NrRows( A )*NrColumns( A )*(l+1) , RealCenter ) ] );
 
+    Display("asd7");
     mat2 := UnionOfRows( [ L_P, HomalgZeroMatrix( NrRows( N )*NrColumns( P )*(l+1), NrRows( P )*NrColumns( M )*(l+1), RealCenter ), R_M ] );
     
     mat := UnionOfColumns( mat1, mat2 );
 
      
+    Display("asd8");
     A_vec_rows_zero_vec := UnionOfColumns( A_vec_rows, HomalgZeroMatrix( 1, NrColumns( M )*NrRows( P )*(l+1), RealCenter ) );
 
+    Display("asd9");
     Assert( 0, NrColumns( mat ) = NrColumns( A_vec_rows_zero_vec ) );
     
+    Display("asd10");
     matrix_of_relations1 := GetMatrixOfRelationsOverRealCenter( R, NrColumns( mat1 ) / ( l + 1 ) );
 
+    Display("asd11");
     matrix_of_relations2 := GetMatrixOfRelationsOverRealCenter( R, NrColumns( mat2 ) / ( l + 1 ) );
     
+    Display("asd12");
     matrix_of_relations := DiagMat( [ matrix_of_relations1, matrix_of_relations2 ] );
     
+    Display("asd13");
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus ", String( NrRows( matrix_of_relations ) ), " relations) system of equations" ) );
 
     start_time2 := NanosecondsSinceEpoch();
@@ -999,6 +1025,17 @@ AddLift( cat,
     #Display( mat );
     #Display( A_vec_over_zero_vec );
     
+    
+    #mynumberofrows := 1625;
+    #mat := CertainRows( mat, [ 1 .. mynumberofrows ] );
+    #A_vec_over_zero_vec := CertainRows( A_vec_over_zero_vec, [ 1 .. mynumberofrows ] );
+    #rationals_gap := HomalgFieldOfRationals();
+    #mat := mat * rationals_gap;
+    #A_vec_over_zero_vec := A_vec_over_zero_vec * rationals_gap;
+    
+    Eval( mat );
+    Eval( A_vec_over_zero_vec );
+    
     start_time2 := NanosecondsSinceEpoch();
     sol_6 := LeftDivide( mat, A_vec_over_zero_vec );
     Display( Concatenation( "computed LeftDivide in ", String( Float( ( NanosecondsSinceEpoch() - start_time2 ) / 1000 / 1000 / 1000 ) ) ) );
@@ -1006,7 +1043,10 @@ AddLift( cat,
     # Display( "sol_6:" );
     # Display( sol_6 );
 
-    if sol_6 <> fail then
+    if sol_6 = fail then
+        Display( "there exists no lift" );
+    else
+        Display( "there exists a lift" );
         XX6 := CertainRows( sol_6, [ 1 .. s*v*2^l ] );
         
         XX_6 := UnionOfColumns( List( [ 1 .. v*2^l ], i -> CertainRows( XX6, [ ( i - 1 )*s + 1 .. i*s ] ) ) );
@@ -1021,7 +1061,7 @@ AddLift( cat,
     Display( Concatenation( "computed lift in ", String( Float( ( NanosecondsSinceEpoch() - start_time ) ) / 1000 / 1000 / 1000 ) ) );
 
     #### evaluation
-    if sol_5 = fail and sol_6 = fail then 
+    if sol_6 = fail then 
       
         Display( fail );
         
