@@ -124,7 +124,7 @@ end;
 DeclareAttribute( "GeneratingSystemOverQ", IsHomalgRing );
 
 InstallMethod( GeneratingSystemOverQ, [ IsHomalgRing ], function( R )
-  local generating_system, l, i;
+  local generating_system, l, i, k, comb;
     
     generating_system := [ ];
     
@@ -137,6 +137,71 @@ InstallMethod( GeneratingSystemOverQ, [ IsHomalgRing ], function( R )
     od;
     
     return generating_system;
+    
+end );
+
+DeclareAttribute( "GeneratingSystemOverQToRealCenter", IsHomalgRing );
+
+InstallMethod( GeneratingSystemOverQToRealCenter, [ IsHomalgRing ], function( R )
+  local generating_system, l, i, k, comb, real_center_comb;
+    
+    generating_system := [ ];
+    
+    l := Length( Indeterminates( R ) );
+    
+    for k in [ 0 .. l ] do
+        for comb in Combinations( [ 0 .. l-1 ], k ) do
+            if Length( comb ) mod 2 = 0 then
+                real_center_comb := comb;
+            else
+                real_center_comb := comb{ [ 2 .. Length( comb ) ] };
+            fi;
+            real_center_string := "1";
+            for i in [ 1 .. Length( real_center_comb ) / 2 ] do
+                real_center_string := Concatenation( real_center_string, "*e", String( real_center_comb[2*i-1] ), "e", String( real_center_comb[2*i] ) );
+            od;
+            Add( generating_system, real_center_string / RealCenter );
+        od;
+    od;
+    
+    return generating_system;
+    
+end );
+
+DeclareAttribute( "GeneratingSystemOverQToRealCenterTrafoMatrix", IsHomalgRing );
+
+InstallMethod( GeneratingSystemOverQToRealCenterTrafoMatrix, [ IsHomalgRing ], function( R )
+  local generating_system, l, i, k, comb, real_center_comb;
+    
+    generating_system := [ ];
+    
+    l := Length( Indeterminates( R ) );
+    l_Q := Length( GeneratingSystemOverQ( R ) );
+    
+    for j in [ 1 .. l_Q ] do
+        generating_system[j] := ListWithIdenticalEntries( l + 1, Zero( RealCenter ) );
+    od;
+    
+    j := 1;
+    for k in [ 0 .. l ] do
+        for comb in Combinations( [ 0 .. l-1 ], k ) do
+            if Length( comb ) mod 2 = 0 then
+                real_center_comb := comb;
+                index := 1;
+            else
+                real_center_comb := comb{ [ 2 .. Length( comb ) ] };
+                index := comb[1] + 2;
+            fi;
+            real_center_string := "1";
+            for i in [ 1 .. Length( real_center_comb ) / 2 ] do
+                real_center_string := Concatenation( real_center_string, "*e", String( real_center_comb[2*i-1] ), "e", String( real_center_comb[2*i] ) );
+            od;
+            generating_system[j][index] := real_center_string / RealCenter;
+            j := j + 1;
+        od;
+    od;
+    
+    return HomalgMatrix( generating_system, l_Q, l + 1, RealCenter );
     
 end );
 
@@ -874,7 +939,219 @@ AddLift( cat,
         od;
     od;
 
-    RealCenter :=  Q*JoinStringsWithSeparator( vars, "," ) / ideal;
+    #RealCenter :=  Q*JoinStringsWithSeparator( vars, "," ) / ideal;
+    #RealCenter :=  Q*JoinStringsWithSeparator( vars, "," );
+    RealCenter :=  HomalgQRingInSingular( Q*JoinStringsWithSeparator( vars, "," ), ideal );
+
+    #Cfpres := LeftPresentations( RealCenter );
+
+    CR := RingAsCategory( R : FinalizeCategory := false );
+    
+    add_hom_structure_to_CR := function( category )
+      local ring, equality_func, Cfpres, matrix_of_relations, R_as_C_module, Q, l, polynomial_vars, polynomial_ring, S, extra_var, e, decompose_element_over_real_center, sets, t_obj, elements, size, RG, HOM_PERMUTATION_ARRAY, i;
+        Display( "define homomorphism structure of the delooping over real center" );
+        
+        ring := UnderlyingRing( category );
+        
+        Cfpres := LeftPresentations( RealCenter );
+        
+        # R as C module
+        matrix_of_relations := GetMatrixOfRelationsOverRealCenter( ring, 1 );
+        R_as_C_module := AsLeftPresentation( matrix_of_relations );
+        
+        Q := CoefficientsRing( R );
+        
+        l := Length( IndeterminatesOfExteriorRing( R ) );
+        
+        polynomial_vars := List( [ 1 .. l + 1 ], a -> Concatenation( "x", String( a ) ) );
+        
+        polynomial_ring := Q * Join( polynomial_vars, "," );
+        
+        S := KoszulDualRing( polynomial_ring );
+        
+        extra_var := Concatenation( "e", String( l ) ) / S;
+
+        e := List( [ 1 .. l ], i -> Concatenation( "e", String(i-1) ) / R );
+
+        generating_system_over_real_center := GeneratingSystemOverRealCenter( R );
+        generating_system_over_Q := GeneratingSystemOverQ( R );
+        #generating_system_over_Q_to_real_center := GeneratingSystemOverQToRealCenter( R );
+        #generating_system_over_Q_to_real_center_diag_mat := HomalgDiagonalMatrix( generating_system_over_Q_to_real_center, Length( generating_system_over_Q ),  RealCenter );
+        generating_system_over_Q_to_real_center_trafo_matrix := GeneratingSystemOverQToRealCenterTrafoMatrix( R );
+
+        Display(generating_system_over_Q);
+        Display(generating_system_over_real_center);
+        
+        element_in_center_in_real_center_string := function( r )
+          local string, found_e, char;
+                
+            string := [];
+            found_e := false;
+            for char in String( r ) do
+                if char = 'e' then
+                    found_e := not found_e;
+                fi;
+                # strip '*' between two e's
+                if not (found_e and char = '*') then
+                    Add( string, char );
+                fi;
+            od;
+            
+            return string;
+
+        end;
+        
+        decompose_element_over_real_center := function( r )
+          local r_in_S, part_in_center, result, part_not_containing_e_i, part_containing_e_i, coeff, coeff_in_real_center, found_e, i, char;
+            
+            r_in_S := r / S;
+            
+            part_in_center := (r_in_S * extra_var + extra_var * r_in_S) / (2 * extra_var) / R;
+
+            r := r - part_in_center;
+            
+            result := element_in_center_in_real_center_string( part_in_center );
+            
+            for i in [ 1 .. l ] do
+                
+                part_not_containing_e_i := (r * e[i]) / e[i];
+                
+                part_containing_e_i := r - part_not_containing_e_i;
+                
+                coeff := part_containing_e_i / e[i];
+                
+                result := Concatenation( result, ",", element_in_center_in_real_center_string( coeff ) );
+                
+                r := part_not_containing_e_i;
+                
+            od;
+            
+            return HomalgMatrix( Concatenation( "[", result, "]" ), 1, l+1, RealCenter );
+            
+        end;
+        
+        RP := homalgTable(R);
+        decompose_element_over_real_center_coeffs := function( r )
+          local coefficients_over_Q, coefficients_over_real_center, i, index, k, comb;
+            
+            if IsZero( r ) then
+                return HomalgZeroMatrix( 1, l+1, RealCenter );
+            fi;
+          
+            coefficients_over_Q := RP!.CoefficientsWithGivenGeneratingSystem( r, generating_system_over_Q );
+            
+            ResultMatrix := HomalgVoidMatrix( 1, Length( generating_system_over_Q ), R );
+            SetEval( ResultMatrix, coefficients_over_Q );
+            
+            coefficients_over_real_center :=  (ResultMatrix * RealCenter) * generating_system_over_Q_to_real_center_trafo_matrix;
+            
+            #coefficients_over_Q_combined := (ResultMatrix * RealCenter) * generating_system_over_Q_to_real_center_diag_mat;
+            
+            
+            #coefficients_over_real_center := ListWithIdenticalEntries( l + 1, Zero( RealCenter ) );
+            #
+            #i := 1;
+            #for k in [ 0 .. l ] do
+            #    for comb in Combinations( [ 0 .. l-1 ], k ) do
+            #        if Length( comb ) mod 2 = 0 then
+            #            index := 1;
+            #        else
+            #            index := comb[1] + 2;
+            #        fi;
+            #        coefficients_over_real_center[index] := coefficients_over_real_center[index] + coefficients_over_Q_combined[1,i];
+            #        i := i + 1;
+            #    od;
+            #od;
+            
+            return HomalgMatrix( coefficients_over_real_center, 1, l+1, RealCenter );
+            
+        end;
+        
+        SetRangeCategoryOfHomomorphismStructure( category, Cfpres );
+
+        ##
+        AddDistinguishedObjectOfHomomorphismStructure( category,
+          function()
+
+              # C^{1 x 1}
+              return FreeLeftPresentation( 1, RealCenter );
+              
+        end );
+        
+        
+        ## Homomorphism structure
+        AddHomomorphismStructureOnObjects( category,
+          function( a, b )
+              
+              return R_as_C_module;
+              
+        end );
+        
+        ##
+        AddHomomorphismStructureOnMorphismsWithGivenObjects( category,
+        function( source, alpha, beta, range )
+          local a, b, rows;
+            
+            a := UnderlyingRingElement( alpha );
+            b := UnderlyingRingElement( beta );
+
+            #Error( "-1" );
+
+            if IsZero( a ) or IsZero( b ) then
+                return ZeroMorphism( R_as_C_module, R_as_C_module );
+            fi;
+
+            #Error( "0" );
+
+            rows := List( generating_system_over_real_center, function( generator )
+              local res1, res2;
+
+                #res1 := DecomposeMatrixOverRealCenter( HomalgMatrix( [ a * generator * b ], 1, 1, R ) );
+                
+                #res2 := decompose_element_over_real_center( a * generator * b );
+                res3 := decompose_element_over_real_center_coeffs( a * generator * b );
+
+                #Assert( 0, res2 = res3 );
+                
+                return res3;
+                
+            end );
+
+            return PresentationMorphism( R_as_C_module, UnionOfRows( rows ), R_as_C_module );
+        
+        end );
+        
+        ##
+        AddInterpretMorphismAsMorphismFromDistinguishedObjectToHomomorphismStructure( category,
+          function( alpha )
+            local decomposition1, decomposition2;
+
+              #decomposition1 := DecomposeMatrixOverRealCenter( HomalgMatrix( [ UnderlyingRingElement( alpha ) ], 1, 1 , R ) );
+              #decomposition2 := decompose_element_over_real_center( UnderlyingRingElement( alpha ) );
+              decomposition3 := decompose_element_over_real_center_coeffs( UnderlyingRingElement( alpha ) );
+              #Assert( 0, decomposition2 = decomposition3 );
+              
+              return PresentationMorphism( DistinguishedObjectOfHomomorphismStructure( category ), decomposition3, R_as_C_module );
+        end );
+        
+        ##
+        AddInterpretMorphismFromDistinguishedObjectToHomomorphismStructureAsMorphism( category,
+          function( a, b, mor )
+            local element;
+
+              element := EntriesOfHomalgMatrix( MyReducedVectorOverRealCenter( ring, UnderlyingMatrix( mor ) ) )[1];
+              
+              return RingAsCategoryMorphism( RingAsCategory( R ), element );
+              
+        end );
+        
+    end;
+    
+    add_hom_structure_to_CR( CR );
+
+    Finalize( CR );
+
+    ERows := AdditiveClosure( CR );
 
     # We need to solve the system
     #     X*B + Y*N = A
@@ -882,7 +1159,92 @@ AddLift( cat,
     #     I_1*X*B   + I_2*Y*N   + 0_1*Z*0_2 = A
     #     P  *X*I_3 + 0_3*Y*0_4 + I_4*Z*M   = 0_rhs
     # the function is supposed to return X as a ( well defined ) morphism from P to M.
+    
+    nr_rows_X := NrRows( A );
+    nr_cols_X := NrRows( B );
+    nr_rows_Y := NrRows( A );
+    nr_cols_Y := NrRows( N );
+    nr_rows_Z := NrRows( P );
+    nr_cols_Z := NrRows( M );
+    
+    left_coeffs  := [ [ HomalgIdentityMatrix( nr_rows_X, R ), HomalgIdentityMatrix( nr_rows_Y, R )            , HomalgZeroMatrix( NrRows( A ), nr_rows_Z, R )    ],
+                      [ P                                   , HomalgZeroMatrix( NrRows( P ), nr_rows_Y, R )   , HomalgIdentityMatrix( nr_rows_Z, R )             ]
+                    ];
 
+    right_coeffs := [ [ B                                   , N                                               , HomalgZeroMatrix( nr_cols_Z, NrColumns( A ), R ) ],
+                      [ HomalgIdentityMatrix( nr_cols_X, R ), HomalgZeroMatrix( nr_cols_Y, NrColumns( M ), R ), M                                                ]
+                    ];
+
+    right_hand_side := [ A, HomalgZeroMatrix( NrRows( P ), NrColumns( M ), R ) ];
+
+    matrix_to_additive_closure_morphism := function( M )
+      local unique_object, source, range, matrix, i, j;
+        
+        if IsList( M ) then
+            return List( M, matrix_to_additive_closure_morphism );
+        fi;
+        
+        unique_object := AsAdditiveClosureObject( RingAsCategoryUniqueObject( RingAsCategory( R ) ) );
+        
+        if NrRows( M ) = 0 then
+            source := ZeroObject( AdditiveClosure( RingAsCategory( R ) ) );
+        else
+            source := DirectSum( ListWithIdenticalEntries( NrRows( M ), unique_object ) );
+        fi;
+        if NrColumns( M ) = 0 then
+            range := ZeroObject( AdditiveClosure( RingAsCategory( R ) ) );
+        else
+            range := DirectSum( ListWithIdenticalEntries( NrColumns( M ), unique_object ) );
+        fi;
+        
+        if IsZero( M ) then
+            return ZeroMorphism( source, range );
+        fi;
+        
+        if IsOne( M ) then
+            return IdentityMorphism( source );
+        fi;
+
+        matrix := EntriesOfHomalgMatrixAsListList( M );
+        for i in [ 1 .. Length( matrix ) ] do
+            for j in [ 1 .. Length( matrix[ 1 ] ) ] do
+                matrix[i][j] := AsAdditiveClosureMorphism( RingAsCategoryMorphism( matrix[i][j], RingAsCategory( R ) ) );
+                # Assert( 0, IsWellDefined( matrix[i][j] ) );
+            od;
+        od;
+        
+        # Assert( 0, IsWellDefined( MorphismBetweenDirectSums( source, matrix, range ) ) );
+        
+        return MorphismBetweenDirectSums( source, matrix, range );
+        
+    end;
+    
+    left_coeffs := matrix_to_additive_closure_morphism( left_coeffs );
+    right_coeffs := matrix_to_additive_closure_morphism( right_coeffs );
+    right_hand_side := matrix_to_additive_closure_morphism( right_hand_side );
+
+    Display( "now solving linear system" );
+    
+    #homalgIOMode( "d" );
+
+    # TraceAllMethods();
+    solution := SolveLinearSystemInAbCategory( left_coeffs, right_coeffs, right_hand_side );
+
+    X := MorphismMatrix( solution[1] );
+    Y := [];
+    for i in [ 1 .. Length( X ) ] do
+        Y[i] := [];
+        for j in [ 1 .. Length( X[1] ) ] do
+            Y[i][j] := UnderlyingRingElement( X[i][j] );
+        od;
+    od;
+    
+    l5 := PresentationMorphism( Source( morphism_1 ), HomalgMatrix( Y, R ), Source( morphism_2 ) );
+    Assert( 0, IsWellDefined( l5 ) );
+    Assert( 0, IsCongruentForMorphisms( PreCompose( l5, morphism_2 ), morphism_1 ) );
+    
+    Error( "ERows" );
+    
     Display("asd1");
     R_B := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), B ) );
 
