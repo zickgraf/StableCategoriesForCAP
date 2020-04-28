@@ -945,18 +945,14 @@ AddLift( cat,
 
     #Cfpres := LeftPresentations( RealCenter );
 
-    CR := RingAsCategory( R : FinalizeCategory := false );
-    
-    add_hom_structure_to_CR := function( category )
+    add_hom_structure_to_CR := function( )
       local ring, equality_func, Cfpres, matrix_of_relations, R_as_C_module, Q, l, polynomial_vars, polynomial_ring, S, extra_var, e, decompose_element_over_real_center, sets, t_obj, elements, size, RG, HOM_PERMUTATION_ARRAY, i;
         Display( "define homomorphism structure of the delooping over real center" );
-        
-        ring := UnderlyingRing( category );
         
         Cfpres := LeftPresentations( RealCenter );
         
         # R as C module
-        matrix_of_relations := GetMatrixOfRelationsOverRealCenter( ring, 1 );
+        matrix_of_relations := GetMatrixOfRelationsOverRealCenter( R, 1 );
         R_as_C_module := AsLeftPresentation( matrix_of_relations );
         
         Q := CoefficientsRing( R );
@@ -978,10 +974,8 @@ AddLift( cat,
         #generating_system_over_Q_to_real_center := GeneratingSystemOverQToRealCenter( R );
         #generating_system_over_Q_to_real_center_diag_mat := HomalgDiagonalMatrix( generating_system_over_Q_to_real_center, Length( generating_system_over_Q ),  RealCenter );
         generating_system_over_Q_to_real_center_trafo_matrix := GeneratingSystemOverQToRealCenterTrafoMatrix( R );
+        generating_system_over_real_center_as_column := HomalgMatrix( generating_system_over_real_center, l+1, 1, R );
 
-        Display(generating_system_over_Q);
-        Display(generating_system_over_real_center);
-        
         element_in_center_in_real_center_string := function( r )
           local string, found_e, char;
                 
@@ -1040,114 +1034,25 @@ AddLift( cat,
           
             coefficients_over_Q := RP!.CoefficientsWithGivenGeneratingSystem( r, generating_system_over_Q );
             
-            ResultMatrix := HomalgVoidMatrix( 1, Length( generating_system_over_Q ), R );
-            SetEval( ResultMatrix, coefficients_over_Q );
-            
+            ResultMatrix := HomalgMatrixWithAttributes( [
+                    Eval, coefficients_over_Q,
+                    NrRows, 1,
+                    NrColumns, Length( generating_system_over_Q ),
+                    ], R );
+        
             coefficients_over_real_center :=  (ResultMatrix * RealCenter) * generating_system_over_Q_to_real_center_trafo_matrix;
-            
-            #coefficients_over_Q_combined := (ResultMatrix * RealCenter) * generating_system_over_Q_to_real_center_diag_mat;
-            
-            
-            #coefficients_over_real_center := ListWithIdenticalEntries( l + 1, Zero( RealCenter ) );
-            #
-            #i := 1;
-            #for k in [ 0 .. l ] do
-            #    for comb in Combinations( [ 0 .. l-1 ], k ) do
-            #        if Length( comb ) mod 2 = 0 then
-            #            index := 1;
-            #        else
-            #            index := comb[1] + 2;
-            #        fi;
-            #        coefficients_over_real_center[index] := coefficients_over_real_center[index] + coefficients_over_Q_combined[1,i];
-            #        i := i + 1;
-            #    od;
-            #od;
             
             return HomalgMatrix( coefficients_over_real_center, 1, l+1, RealCenter );
             
         end;
         
-        SetRangeCategoryOfHomomorphismStructure( category, Cfpres );
-
-        ##
-        AddDistinguishedObjectOfHomomorphismStructure( category,
-          function()
-
-              # C^{1 x 1}
-              return FreeLeftPresentation( 1, RealCenter );
-              
-        end );
+        ring_map := RingMap( List( vars_by_index, x -> Concatenation( "e", String(x[1]), "*e", String(x[2]) ) / R ), RealCenter, R);
         
-        
-        ## Homomorphism structure
-        AddHomomorphismStructureOnObjects( category,
-          function( a, b )
-              
-              return R_as_C_module;
-              
-        end );
-        
-        ##
-        AddHomomorphismStructureOnMorphismsWithGivenObjects( category,
-        function( source, alpha, beta, range )
-          local a, b, rows;
-            
-            a := UnderlyingRingElement( alpha );
-            b := UnderlyingRingElement( beta );
-
-            #Error( "-1" );
-
-            if IsZero( a ) or IsZero( b ) then
-                return ZeroMorphism( R_as_C_module, R_as_C_module );
-            fi;
-
-            #Error( "0" );
-
-            rows := List( generating_system_over_real_center, function( generator )
-              local res1, res2;
-
-                #res1 := DecomposeMatrixOverRealCenter( HomalgMatrix( [ a * generator * b ], 1, 1, R ) );
-                
-                #res2 := decompose_element_over_real_center( a * generator * b );
-                res3 := decompose_element_over_real_center_coeffs( a * generator * b );
-
-                #Assert( 0, res2 = res3 );
-                
-                return res3;
-                
-            end );
-
-            return PresentationMorphism( R_as_C_module, UnionOfRows( rows ), R_as_C_module );
-        
-        end );
-        
-        ##
-        AddInterpretMorphismAsMorphismFromDistinguishedObjectToHomomorphismStructure( category,
-          function( alpha )
-            local decomposition1, decomposition2;
-
-              #decomposition1 := DecomposeMatrixOverRealCenter( HomalgMatrix( [ UnderlyingRingElement( alpha ) ], 1, 1 , R ) );
-              #decomposition2 := decompose_element_over_real_center( UnderlyingRingElement( alpha ) );
-              decomposition3 := decompose_element_over_real_center_coeffs( UnderlyingRingElement( alpha ) );
-              #Assert( 0, decomposition2 = decomposition3 );
-              
-              return PresentationMorphism( DistinguishedObjectOfHomomorphismStructure( category ), decomposition3, R_as_C_module );
-        end );
-        
-        ##
-        AddInterpretMorphismFromDistinguishedObjectToHomomorphismStructureAsMorphism( category,
-          function( a, b, mor )
-            local element;
-
-              element := EntriesOfHomalgMatrix( MyReducedVectorOverRealCenter( ring, UnderlyingMatrix( mor ) ) )[1];
-              
-              return RingAsCategoryMorphism( RingAsCategory( R ), element );
-              
-        end );
-        
+        return RingAsCategory( R : FinalizeCategory := false, HomomorphismStructureOverSubringOfCenter := [ R_as_C_module, generating_system_over_real_center, decompose_element_over_real_center_coeffs, ring_map ] );
+    
     end;
     
-    add_hom_structure_to_CR( CR );
+    CR := add_hom_structure_to_CR( );
 
     Finalize( CR );
 
