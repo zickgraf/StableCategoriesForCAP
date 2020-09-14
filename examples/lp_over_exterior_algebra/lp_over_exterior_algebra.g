@@ -1,5 +1,5 @@
 
-LoadPackage( "FrobeniusCategoriesForCAP" );
+LoadPackage( "FrobeniusCategories" );
 ReadPackage( "StableCategoriesForCAP", "/examples/lp_over_exterior_algebra/tools.g" );
 
 
@@ -124,43 +124,17 @@ end;
 DeclareAttribute( "GeneratingSystemOverQ", IsHomalgRing );
 
 InstallMethod( GeneratingSystemOverQ, [ IsHomalgRing ], function( R )
-  local generating_system, l, i, k, comb;
+  local generating_system, indets, l, k, comb;
     
-    generating_system := [ ];
+    generating_system := [ One( R ) ];
     
-    l := Length( Indeterminates( R ) );
+    indets := Indeterminates( R );
     
-    for k in [ 0 .. l ] do
-        for comb in Combinations( [ 0 .. l-1 ], k ) do
-            Add( generating_system, Concatenation( "1", Concatenation( List( comb, i -> Concatenation( "*e", String( i ) ) ) ) ) / R );
-        od;
-    od;
+    l := Length( indets );
     
-    return generating_system;
-    
-end );
-
-DeclareAttribute( "GeneratingSystemOverQToRealCenter", IsHomalgRing );
-
-InstallMethod( GeneratingSystemOverQToRealCenter, [ IsHomalgRing ], function( R )
-  local generating_system, l, i, k, comb, real_center_comb;
-    
-    generating_system := [ ];
-    
-    l := Length( Indeterminates( R ) );
-    
-    for k in [ 0 .. l ] do
-        for comb in Combinations( [ 0 .. l-1 ], k ) do
-            if Length( comb ) mod 2 = 0 then
-                real_center_comb := comb;
-            else
-                real_center_comb := comb{ [ 2 .. Length( comb ) ] };
-            fi;
-            real_center_string := "1";
-            for i in [ 1 .. Length( real_center_comb ) / 2 ] do
-                real_center_string := Concatenation( real_center_string, "*e", String( real_center_comb[2*i-1] ), "e", String( real_center_comb[2*i] ) );
-            od;
-            Add( generating_system, real_center_string / RealCenter );
+    for k in [ 1 .. l ] do
+        for comb in Combinations( indets, k ) do
+            Add( generating_system, Product( comb ) );
         od;
     od;
     
@@ -271,17 +245,8 @@ end;
 DeclareAttribute( "GeneratingSystemOverRealCenter", IsHomalgRing );
 
 InstallMethod( GeneratingSystemOverRealCenter, [ IsHomalgRing ], function( R )
-  local generating_system, l, i;
     
-    generating_system := [ Identity( R ) ];
-    
-    l := Length( Indeterminates( R ) );
-
-    for i in [ 0 .. l-1 ] do
-        Add( generating_system, Concatenation( "e", String( i ) ) / R );
-    od;
-    
-    return generating_system;
+    return Concatenation( [ One( R ) ], Indeterminates( R ) );
     
 end );
 
@@ -347,8 +312,10 @@ GetMatrixOfRelationsOverRealCenter := function( R, dimension )
         return dimension * i + d;
     end;
     
-    l := Length( Indeterminates( R ) );
-
+    indets := Indeterminates( R );
+    
+    l := Length( indets );
+    
     relations := [  ];
     
     for d in [ 1 .. dimension ] do
@@ -394,13 +361,16 @@ GetMatrixOfRelationsOverRealCenter := function( R, dimension )
     # 
     # return M;
 
-    M := Iterated( relations, UnionOfRowsEagerOp );
+    #M := Iterated( relations, UnionOfRowsEager );
+    
+    M := UnionOfRows( relations );
     
     Eval( M );
     
     #DecideZero( Eval( M ), RealCenter );
     
-    SetEval( M, DecideZero( Eval( M ), RealCenter ) );
+    # MODIFIED
+    #SetEval( M, DecideZero( Eval( M ), RealCenter ) );
     
     # DecideZero( A, RealCenter );
     
@@ -540,6 +510,8 @@ v_isom_inv_real_center := function( R, X, s, v )
     
     return devec_rows( vec_X, s, v );
 end;
+
+if true then
 
 AddLift( cat, 
 
@@ -943,13 +915,22 @@ AddLift( cat,
     #RealCenter :=  Q*JoinStringsWithSeparator( vars, "," );
     RealCenter :=  HomalgQRingInSingular( Q*JoinStringsWithSeparator( vars, "," ), ideal );
 
+# AdditiveClosure
+if false then
+
     #Cfpres := LeftPresentations( RealCenter );
 
     add_hom_structure_to_CR := function( )
-      local ring, equality_func, Cfpres, matrix_of_relations, R_as_C_module, Q, l, polynomial_vars, polynomial_ring, S, extra_var, e, decompose_element_over_real_center, sets, t_obj, elements, size, RG, HOM_PERMUTATION_ARRAY, i;
+      local ring, equality_func, Cfpres, matrix_of_relations, R_as_C_module, Q, l, polynomial_vars, polynomial_ring, S, extra_var, e, decompose_element_over_real_center, sets, t_obj, elements, size, RG, HOM_PERMUTATION_ARRAY, i, decompose_element_over_Q, generating_system_over_Q_as_matrix, matrix_element_as_morphism, list_list_as_matrix;
         Display( "define homomorphism structure of the delooping over real center" );
         
-        Cfpres := LeftPresentations( RealCenter );
+        Cfpres := LeftPresentations( RealCenter : overhead := false );
+
+        DeactivateToDoList();
+        
+        DeactivateCachingOfCategory(Cfpres);
+        CapCategorySwitchLogicOff(Cfpres);
+        DisableSanityChecks(Cfpres);
         
         # R as C module
         matrix_of_relations := GetMatrixOfRelationsOverRealCenter( R, 1 );
@@ -957,107 +938,439 @@ AddLift( cat,
         
         Q := CoefficientsRing( R );
         
-        l := Length( IndeterminatesOfExteriorRing( R ) );
+        indets := Indeterminates( R );
         
-        polynomial_vars := List( [ 1 .. l + 1 ], a -> Concatenation( "x", String( a ) ) );
+        l := Length( indets );
         
-        polynomial_ring := Q * Join( polynomial_vars, "," );
-        
-        S := KoszulDualRing( polynomial_ring );
-        
-        extra_var := Concatenation( "e", String( l ) ) / S;
-
-        e := List( [ 1 .. l ], i -> Concatenation( "e", String(i-1) ) / R );
-
         generating_system_over_real_center := GeneratingSystemOverRealCenter( R );
         generating_system_over_Q := GeneratingSystemOverQ( R );
-        #generating_system_over_Q_to_real_center := GeneratingSystemOverQToRealCenter( R );
-        #generating_system_over_Q_to_real_center_diag_mat := HomalgDiagonalMatrix( generating_system_over_Q_to_real_center, Length( generating_system_over_Q ),  RealCenter );
         generating_system_over_Q_to_real_center_trafo_matrix := GeneratingSystemOverQToRealCenterTrafoMatrix( R );
-        generating_system_over_real_center_as_column := HomalgMatrix( generating_system_over_real_center, l+1, 1, R );
+        generating_system_over_Q_as_matrix := HomalgMatrix( generating_system_over_Q, Length( generating_system_over_Q ), 1, R );
 
-        element_in_center_in_real_center_string := function( r )
-          local string, found_e, char;
-                
-            string := [];
-            found_e := false;
-            for char in String( r ) do
-                if char = 'e' then
-                    found_e := not found_e;
-                fi;
-                # strip '*' between two e's
-                if not (found_e and char = '*') then
-                    Add( string, char );
-                fi;
-            od;
-            
-            return string;
-
-        end;
-        
         decompose_element_over_real_center := function( r )
-          local r_in_S, part_in_center, result, part_not_containing_e_i, part_containing_e_i, coeff, coeff_in_real_center, found_e, i, char;
-            
-            r_in_S := r / S;
-            
-            part_in_center := (r_in_S * extra_var + extra_var * r_in_S) / (2 * extra_var) / R;
-
-            r := r - part_in_center;
-            
-            result := element_in_center_in_real_center_string( part_in_center );
-            
-            for i in [ 1 .. l ] do
-                
-                part_not_containing_e_i := (r * e[i]) / e[i];
-                
-                part_containing_e_i := r - part_not_containing_e_i;
-                
-                coeff := part_containing_e_i / e[i];
-                
-                result := Concatenation( result, ",", element_in_center_in_real_center_string( coeff ) );
-                
-                r := part_not_containing_e_i;
-                
-            od;
-            
-            return HomalgMatrix( Concatenation( "[", result, "]" ), 1, l+1, RealCenter );
-            
-        end;
-        
-        RP := homalgTable(R);
-        decompose_element_over_real_center_coeffs := function( r )
           local coefficients_over_Q, coefficients_over_real_center, i, index, k, comb;
             
             if IsZero( r ) then
                 return HomalgZeroMatrix( 1, l+1, RealCenter );
             fi;
           
-            coefficients_over_Q := RP!.CoefficientsWithGivenGeneratingSystem( r, generating_system_over_Q );
+            coefficients_over_Q := CoefficientsWithGivenMonomials( r, generating_system_over_Q_as_matrix );
             
-            ResultMatrix := HomalgMatrixWithAttributes( [
-                    Eval, coefficients_over_Q,
-                    NrRows, 1,
-                    NrColumns, Length( generating_system_over_Q ),
-                    ], R );
-        
-            coefficients_over_real_center :=  (ResultMatrix * RealCenter) * generating_system_over_Q_to_real_center_trafo_matrix;
+            #coefficients_over_real_center :=  CoercedMatrix(coefficients_over_Q, RealCenter) * generating_system_over_Q_to_real_center_trafo_matrix;
+            coefficients_over_real_center :=  (coefficients_over_Q * RealCenter) * generating_system_over_Q_to_real_center_trafo_matrix;
             
-            return HomalgMatrix( coefficients_over_real_center, 1, l+1, RealCenter );
+            return coefficients_over_real_center;
+            
+            #return HomalgMatrix( coefficients_over_real_center, 1, l+1, RealCenter );
             
         end;
         
-        ring_map := RingMap( List( vars_by_index, x -> Concatenation( "e", String(x[1]), "*e", String(x[2]) ) / R ), RealCenter, R);
+        ring_map_real_center_to_R := RingMap( List( vars_by_index, x -> indets[x[1] + 1] * indets[x[2] + 1] ), RealCenter, R);
+
+        #return RingAsCategory( R : FinalizeCategory := false, HomomorphismStructureOverSubringOfCenter := [ R_as_C_module, generating_system_over_real_center, decompose_element_over_real_center, ring_map_real_center_to_R ] );
         
-        return RingAsCategory( R : FinalizeCategory := false, HomomorphismStructureOverSubringOfCenter := [ R_as_C_module, generating_system_over_real_center, decompose_element_over_real_center_coeffs, ring_map ] );
-    
+        MatrixCategory( Q : overhead := false );
+
+        R_as_Q_vector_space := VectorSpaceObject( Length( generating_system_over_Q ), Q );
+
+        mycounter := 0;
+
+        decompose_element_over_Q := function( r )
+          local coefficients_over_Q, coefficients_over_real_center, i, index, k, comb;
+            #% CAP_JIT_RESOLVE_FUNCTION
+            
+            #if not IsHomalgMatrix( r ) then
+            #    r := HomalgMatrix( [ r ], 1, 1, R );
+            #fi;
+
+            #return CoercedMatrix( UnionOfColumns( ListWithIdenticalEntries( Length( generating_system_over_Q ) , r ) ), Q );
+
+            #if IsZero( r ) then
+            #    return CoercedMatrix( HomalgZeroMatrix( 1, Length( generating_system_over_Q ), R ), Q );
+            #fi;
+
+            #mycounter := mycounter + 1;
+          
+            coefficients_over_Q := CoefficientsWithGivenMonomials( HomalgMatrix( [ r ], 1, 1, R ), generating_system_over_Q_as_matrix );
+            
+            return coefficients_over_Q * Q;
+            
+            #return CoercedMatrix( coefficients_over_Q, Q );
+            
+        end;
+        
+        ring_map_Q_to_R := RingMap( [], Q, R );
+        
+        #return RingAsCategory( R : FinalizeCategory := false, overhead := false, HomomorphismStructureOverSubringOfCenter := [ R_as_C_module, generating_system_over_real_center, decompose_element_over_real_center, ring_map_real_center_to_R ] );
+        return RingAsCategory( R : FinalizeCategory := false, overhead := false, HomomorphismStructureOverSubringOfCenter := [ R_as_Q_vector_space, generating_system_over_Q, decompose_element_over_Q, ring_map_Q_to_R ] );
+        
     end;
     
     CR := add_hom_structure_to_CR( );
 
+    DeactivateCachingOfCategory(CR);
+    CapCategorySwitchLogicOff(CR);
+    DisableSanityChecks(CR);
+        
     Finalize( CR );
 
-    ERows := AdditiveClosure( CR );
+    BindGlobal( "GlobalR", R );
 
+    matrix_element_as_morphism := function( r )
+        #% CAP_JIT_RESOLVE_FUNCTION
+        return RingAsCategoryMorphismOp( RingAsCategory( GlobalR ), r );
+    end;
+
+    
+    # LOGIC FUNCTIONS
+
+CapJitAddLogicFunction( function( tree, jit_args )
+  local pre_func, additional_arguments_func;
+    
+    Info( InfoCapJit, 1, "####" );
+    Info( InfoCapJit, 1, "Apply logic for HomalgMatrix." );
+    
+    pre_func := function( tree, func_stack )
+      local args, list, func_id, ring_element, condition_func, right;
+        
+        # find HomalgMatrix( ... )
+        if CapJitIsCallToGlobalFunction( tree, "HomalgMatrix" ) then
+            
+            args := tree.args;
+
+            # check if ... = [ [ ... ], ... ]
+            if args[1].type = "EXPR_LIST" then
+                
+                list := args[1].list;
+                
+                func_id := Last( func_stack).id;
+                
+                # check if all elements of the matrix are multiplied by the same ring element from the left
+                if Length( list ) > 0 and ForAll( list, l -> l.type = "EXPR_PROD" and l.left = list[1].left ) then
+                    
+                    ring_element := list[1].left;
+                    
+                    # check if ring_element is independent of local variables
+                    condition_func := function( tree, path )
+                        
+                        if PositionSublist( tree.type, "FVAR" ) <> fail and tree.func_id = func_id then
+                            
+                            return true;
+                            
+                        fi;
+                        
+                        return false;
+                        
+                    end;
+                    
+                    if CapJitFindNodeDeep( ring_element, condition_func ) = fail then
+                        
+                        tree := rec(
+                            type := "EXPR_PROD",
+                            left := ring_element,
+                            right := StructuralCopy( tree ),
+                        );
+                        
+                        tree.right.args[1].list := List( list, l -> l.right );
+
+                        return tree;
+                        
+                    fi;
+                    
+                fi;
+                
+                # check if all elements of the matrix are multiplied by the same ring element from the right
+                if Length( list ) > 0 and ForAll( list, l -> l.type = "EXPR_PROD" and l.right = list[1].right ) then
+                    
+                    ring_element := list[1].right;
+                    
+                    # check if ring_element is independent of local variables
+                    condition_func := function( tree, path )
+                        
+                        if PositionSublist( tree.type, "FVAR" ) <> fail and tree.func_id = func_id then
+                            
+                            return true;
+                            
+                        fi;
+                        
+                        return false;
+                        
+                    end;
+                    
+                    if CapJitFindNodeDeep( ring_element, condition_func ) = fail then
+                        
+                        tree := rec(
+                            type := "EXPR_PROD",
+                            left := StructuralCopy( tree ),
+                            right := ring_element,
+                        );
+                        
+                        tree.left.args[1].list := List( list, l -> l.left );
+
+                        return tree;
+                        
+                    fi;
+                    
+                fi;
+                
+            fi;
+
+        fi;
+            
+        return tree;
+        
+    end;
+    
+    additional_arguments_func := function( tree, key, func_stack )
+        
+        if IsRecord( tree ) and tree.type = "EXPR_FUNC" then
+            
+            Assert( 0, IsBound( tree.id ) );
+            
+            return Concatenation( func_stack, [ tree ] );
+            
+        else
+            
+            return func_stack;
+            
+        fi;
+        
+    end;
+    
+    return CapJitIterateOverTree( tree, pre_func, CapJitResultFuncCombineChildren, additional_arguments_func, [] );
+    
+end );
+    
+    # LOGIC TEMPLATES
+    
+# if IsMatrixObj( ... ) then return ...; else return ...; fi;
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "matrix", "if_value", "else_value" ],
+    variable_filters := [ IsMatrixObj, IsObject, IsObject ],
+    src_template := "if IsMatrixObj( matrix ) then return if_value; else return else_value; fi;",
+    dst_template := "return if_value",
+    returns_value := false,
+) );
+
+
+# List( Concatenation( List( L1, l1 -> List( L2, f ) ) ), g )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list1", "list2", "outer_func", "inner_func" ],
+    src_template := "List( Concatenation( List( list1, l1 -> List( list2, inner_func ) ) ), outer_func )",
+    dst_template := "Concatenation( List( list1, l1 -> List( list2, x -> outer_func( inner_func( x ) ) ) ) )",
+    new_funcs := [ [ "x" ] ],
+    returns_value := true,
+) );
+
+# List( [ 1 .. last ], func ) = [ ] => last <= 0
+#CapJitAddLogicTemplate( rec(
+#    variable_names := [ "last", "func" ],
+#    src_template := "List( [ 1 .. last ], func ) = [ ]",
+#    dst_template := "last <= 0",
+#    returns_value := true,
+#) );
+
+# List( list, l -> List( [ 1 .. last ], func ) )[1] = [ ] => last <= 0
+#MakeReadWriteGlobal( "CAP_JIT_LOGIC_TEMPLATES" );
+#CAP_JIT_LOGIC_TEMPLATES := Concatenation( [
+#    rec(
+#        variable_names := [ "list", "last", "func" ],
+#        src_template := "List( list, l -> List( [ 1 .. last ], func ) )[1] = [ ]",
+#        dst_template := "last <= 0",
+#        returns_value := true,
+#    )
+#], CAP_JIT_LOGIC_TEMPLATES );
+
+# IsEmpty( List( [ 1 .. last ], func ) ) => last <= 0
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "last", "func" ],
+    src_template := "IsEmpty( List( [ 1 .. last ], func ) )",
+    dst_template := "last <= 0",
+    returns_value := true,
+) );
+# List( list, l -> List( [ 1 .. last ], func ) )[1] = [ ] => last <= 0
+MakeReadWriteGlobal( "CAP_JIT_LOGIC_TEMPLATES" );
+CAP_JIT_LOGIC_TEMPLATES := Concatenation( [
+    rec(
+        variable_names := [ "list", "last", "func" ],
+        src_template := "IsEmpty( List( list, l -> List( [ 1 .. last ], func ) )[1] )",
+        dst_template := "last <= 0",
+        returns_value := true,
+    )
+], CAP_JIT_LOGIC_TEMPLATES );
+
+# Sum( Concatenation( List( L1, l1 -> List( L2, f ) ) ) )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list1", "list2", "func" ],
+    src_template := "Sum( Concatenation( List( list1, l1 -> List( list2, func ) ) ) )",
+    dst_template := "Sum( List( list1, l1 -> Sum( List( list2, func ) ) ) )",
+    returns_value := true,
+) );
+
+# Sum( List( L, l -> <fixed value> ) )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "value" ],
+    variable_filters := [ IsObject, IsRat ],
+    src_template := "Sum( List( list, l -> value ) )",
+    # Note: This is wrong if <value> depends on <l>. This case is automatically skipped by the logic since the result would not be a well-defined function.
+    dst_template := "Length( list ) * value",
+    returns_value := true,
+) );
+
+# UnionOfRows( CoercedMatrix )
+#CapJitAddLogicTemplate( rec(
+#    variable_names := [ "list", "matrix", "ring" ],
+#    src_template := "UnionOfRows( List( list, l -> CoercedMatrix( matrix, ring ) ) )",
+#    dst_template := "CoercedMatrix( UnionOfRows( List( list, l -> matrix ) ), ring )",
+#    returns_value := true,
+#    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+#) );
+
+# UnionOfColumns( CoercedMatrix )
+#CapJitAddLogicTemplate( rec(
+#    variable_names := [ "list", "matrix", "ring" ],
+#    src_template := "UnionOfColumns( List( list, l -> CoercedMatrix( matrix, ring ) ) )",
+#    dst_template := "CoercedMatrix( UnionOfColumns( List( list, l -> matrix ) ), ring )",
+#    returns_value := true,
+#    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+#) );
+
+# UnionOfRows( M * R )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "matrix", "ring" ],
+    variable_filters := [ IsObject, IsHomalgMatrix, IsHomalgRing ],
+    src_template := "UnionOfRows( List( list, l -> matrix * ring ) )",
+    dst_template := "UnionOfRows( List( list, l -> matrix ) ) * ring",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# UnionOfColumns( M * R )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "matrix", "ring" ],
+    variable_filters := [ IsObject, IsHomalgMatrix, IsHomalgRing ],
+    src_template := "UnionOfColumns( List( list, l -> matrix * ring ) )",
+    dst_template := "UnionOfColumns( List( list, l -> matrix ) ) * ring",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# UnionOfRows( CoefficientsWithGivenMonomials )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "matrix", "monomials" ],
+    variable_filters := [ IsObject, "IsHomalgMatrix", "IsHomalgMatrix" ],
+    src_template := "UnionOfRows( List( list, l -> CoefficientsWithGivenMonomials( matrix, monomials ) ) )",
+    dst_template := "CoefficientsWithGivenMonomials( UnionOfRows( List( list, l -> matrix ) ), monomials )",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# UnionOfColumns( CoefficientsWithGivenMonomials )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "matrix", "monomials" ],
+    variable_filters := [ IsObject, "IsHomalgMatrix", "IsHomalgMatrix" ],
+    src_template := "UnionOfColumns( List( list, l -> CoefficientsWithGivenMonomials( matrix, monomials ) ) )",
+    dst_template := "CoefficientsWithGivenMonomials( UnionOfColumns( List( list, l -> matrix ) ), DiagMat( List( list, x -> monomials ) ) )",
+    new_funcs := [ [ "x" ] ],
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# UnionOfRows( a * B )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "ring_element", "matrix" ],
+    variable_filters := [ IsObject, "IsHomalgRingElement", "IsHomalgMatrix" ],
+    src_template := "UnionOfRows( List( list, l -> ring_element * matrix ) )",
+    dst_template := "ring_element * UnionOfRows( List( list, l -> matrix ) )",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# UnionOfRows( A * b )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "matrix", "ring_element" ],
+    variable_filters := [ IsObject, "IsHomalgMatrix", "IsHomalgRingElement" ],
+    src_template := "UnionOfRows( List( list, l -> matrix * ring_element ) )",
+    dst_template := "UnionOfRows( List( list, l -> matrix ) ) * ring_element",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# UnionOfColumns( a * B )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "ring_element", "matrix" ],
+    variable_filters := [ IsObject, "IsHomalgRingElement", "IsHomalgMatrix" ],
+    src_template := "UnionOfColumns( List( list, l -> ring_element * matrix ) )",
+    dst_template := "ring_element * UnionOfColumns( List( list, l -> matrix ) )",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# UnionOfColumns( A * b )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "list", "matrix", "ring_element" ],
+    variable_filters := [ IsObject, "IsHomalgMatrix", "IsHomalgRingElement" ],
+    src_template := "UnionOfColumns( List( list, l -> matrix * ring_element ) )",
+    dst_template := "UnionOfColumns( List( list, l -> matrix ) ) * ring_element",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# DualKroneckerMat( A, B )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "A", "B" ],
+    variable_filters := [ "IsHomalgMatrix", "IsHomalgMatrix" ],
+    src_template := """
+        UnionOfRows( List( [ 1 .. NrRows( B ) ], i ->
+            UnionOfColumns( List( [ 1 .. NrColumns( B ) ], j ->
+                A * B[i,j]
+            ) )
+        ) )
+    """,
+    dst_template := "DualKroneckerMat( A, B )",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+    #debug := true,
+    #debug_path := [ "stats", "statements", 2, "obj", "args", 12, "args", 1, "args", 1, "args", 1, "args", 2, "stats", "statements", 1, "obj", "args", 1, "args", 2, "stats", "statements", 1, "obj", "right" ],
+) );
+
+# KroneckerMat( TransposedMatrix( A ), B )
+CapJitAddLogicTemplate( rec(
+    variable_names := [ "A", "B" ],
+    variable_filters := [ "IsHomalgMatrix", "IsHomalgMatrix" ],
+    src_template := """
+        UnionOfRows( List( [ 1 .. NrColumns( A ) ], j ->
+            UnionOfColumns( List( [ 1 .. NrRows( A ) ], i ->
+                A[i,j] * B
+            ) )
+        ) )
+    """,
+    dst_template := "KroneckerMat( TransposedMatrix( A ), B )",
+    returns_value := true,
+    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+) );
+
+# HomalgRing( CoercedMatrix )
+#CapJitAddLogicTemplate( rec(
+#    variable_names := [ "matrix", "ring" ],
+#    src_template := "HomalgRing( CoercedMatrix( matrix, ring ) )",
+#    dst_template := "ring",
+#    returns_value := true,
+#    needed_packages := [ [ "MatricesForHomalg", ">= 2020.05.19" ] ],
+#) );
+
+    
+    
+    
+    #ERows := AdditiveClosure( CR : matrix_element_as_morphism := r -> RingAsCategoryMorphismOp( RingAsCategory( GlobalR ), HomalgMatrix( [ r ], 1, 1, GlobalR ) ) );
+    #ERows := AdditiveClosure( CR : matrix_element_as_morphism := matrix_element_as_morphism, enable_compilation := true );
+    ERows := AdditiveClosure( CR : matrix_element_as_morphism := matrix_element_as_morphism, enable_compilation := [ "HomomorphismStructureOnMorphismsWithGivenObjects" ] );
+    #ERows := AdditiveClosure( CR : matrix_element_as_morphism := matrix_element_as_morphism );
+
+    DeactivateCachingOfCategory(ERows);
+    CapCategorySwitchLogicOff(ERows);
+    DisableSanityChecks(ERows);
+        
     # We need to solve the system
     #     X*B + Y*N = A
     #     P*X + Z*M = 0
@@ -1102,25 +1415,28 @@ AddLift( cat,
             range := DirectSum( ListWithIdenticalEntries( NrColumns( M ), unique_object ) );
         fi;
         
-        if IsZero( M ) then
-            return ZeroMorphism( source, range );
-        fi;
-        
-        if IsOne( M ) then
-            return IdentityMorphism( source );
-        fi;
+        #if IsZero( M ) then
+        #    return ZeroMorphism( source, range );
+        #fi;
+        #
+        #if IsOne( M ) then
+        #    return IdentityMorphism( source );
+        #fi;
 
         matrix := EntriesOfHomalgMatrixAsListList( M );
         for i in [ 1 .. Length( matrix ) ] do
             for j in [ 1 .. Length( matrix[ 1 ] ) ] do
-                matrix[i][j] := AsAdditiveClosureMorphism( RingAsCategoryMorphism( matrix[i][j], RingAsCategory( R ) ) );
+                #matrix[i][j] := RingAsCategoryMorphism( matrix[i][j], RingAsCategory( R ) );
+                matrix[i][j] := RingAsCategoryMorphismOp( RingAsCategory( R ), HomalgMatrix( [ M[i,j] ], 1, 1, R ) );
                 # Assert( 0, IsWellDefined( matrix[i][j] ) );
             od;
         od;
+
+        #Error("asd");
         
         # Assert( 0, IsWellDefined( MorphismBetweenDirectSums( source, matrix, range ) ) );
         
-        return MorphismBetweenDirectSums( source, matrix, range );
+        return AdditiveClosureMorphism( source, M, range );
         
     end;
     
@@ -1129,26 +1445,30 @@ AddLift( cat,
     right_hand_side := matrix_to_additive_closure_morphism( right_hand_side );
 
     Display( "now solving linear system" );
+
+    SetInfoLevel( InfoCapJit, 1 );
     
     #homalgIOMode( "d" );
 
     # TraceAllMethods();
     solution := SolveLinearSystemInAbCategory( left_coeffs, right_coeffs, right_hand_side );
 
-    X := MorphismMatrix( solution[1] );
-    Y := [];
-    for i in [ 1 .. Length( X ) ] do
-        Y[i] := [];
-        for j in [ 1 .. Length( X[1] ) ] do
-            Y[i][j] := UnderlyingRingElement( X[i][j] );
-        od;
-    od;
+    Y := MorphismMatrix( solution[1] );
+    #Y := [];
+    #for i in [ 1 .. Length( X ) ] do
+    #    Y[i] := [];
+    #    for j in [ 1 .. Length( X[1] ) ] do
+    #        Y[i][j] := UnderlyingRingElement( X[i,j] );
+    #    od;
+    #od;
     
     l5 := PresentationMorphism( Source( morphism_1 ), HomalgMatrix( Y, R ), Source( morphism_2 ) );
     Assert( 0, IsWellDefined( l5 ) );
     Assert( 0, IsCongruentForMorphisms( PreCompose( l5, morphism_2 ), morphism_1 ) );
     
     Error( "ERows" );
+
+fi;
     
     Display("asd1");
     R_B := MyBlownUpMatrixOverRealCenter( KroneckerMat( HomalgIdentityMatrix( NrRows( A ), R ), B ) );
@@ -1199,6 +1519,9 @@ AddLift( cat,
     Display( Concatenation( "solving ", String( NrRows( mat ) ), "x", String( NrColumns( mat ) ), " (plus ", String( NrRows( matrix_of_relations ) ), " relations) system of equations" ) );
 
     start_time2 := NanosecondsSinceEpoch();
+
+    #Error("asd");
+    #homalgIOMode( "d" );
     sol_5 := RightDivide( A_vec_rows_zero_vec, UnionOfRows( mat, matrix_of_relations ) );
     Display( Concatenation( "computed RightDivide in ", String( Float( ( NanosecondsSinceEpoch() - start_time2 ) / 1000 / 1000 / 1000 ) ) ) );
 
@@ -1358,6 +1681,8 @@ AddLift( cat,
     return PresentationMorphism( Source( morphism_1 ), DecideZeroRows( X, M ), Source( morphism_2 ) );
     
 end );
+
+fi;
 
 AddIsSplitMonomorphism( cat, 
     function( mor )

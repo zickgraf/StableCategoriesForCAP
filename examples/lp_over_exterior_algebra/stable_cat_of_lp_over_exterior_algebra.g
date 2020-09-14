@@ -72,7 +72,7 @@ end );
 
 WithComments := false;
 
-HOMALG_MATRICES.Eager := true;
+#HOMALG_MATRICES.Eager := true;
 
 #homalgIOMode( "f" );
 
@@ -173,34 +173,37 @@ seed := NanosecondsSinceEpoch();
 #seed := 1557235952514826000;
 #seed := 1569594877157026000; # 6 Variablen, Komplexität 6, schneller als Kamal
 #seed := 1569595056555501000; # 6 Variablen, Komplexität 6 schneller als Kamal
-seed := 1569595056555501000; # 8 Variablen, Komplexität 6 schneller als Kamal?
+#seed := 1569595056555501000; # 8 Variablen, Komplexität 6 schneller als Kamal?
 #seed := 1569943402902090000; # 8 Variablen, Komplexität 6 small (ResidueClassRing: 44s, qring: 3s, Kamal: 240 seconds)
 #p := AsLeftPresentation( HomalgMatrix( "[ [ 2*e1, 1 ] ]", 2, 1, R ) ); # für viele Variablen deutlich schneller als Kamal
 #seed := 1569944396532952000; # 6 Variablen, Komplexität 3, ich: 4s Aufbau, 35s Lift; Kamal: 19s Aufbau, 1s Lift
-#seed := 1569944607828552000; # 6 Variablen, Komplexität 3, ich: 3s Aufbau, 12s Lift; Kamal: 18s Aufbau, 1s Lift
+seed := 1569944607828552000; # 6 Variablen, Komplexität 3, ich: 3s Aufbau, 12s Lift; Kamal: 18s Aufbau, 1s Lift
 #seed := 1570193383238830000; # 2 Var, Komplexität 20, exists lift
 #seed := 1570193489141308000; # 2 Var, Komplexität 20, exists lift
 #seed := 1570193646279951000; # 2 Var, Komplexität 20, Kamal 1400x1400
 #seed := 1570193890032994000; # 2 Var, Komplexität 20, Kamal 2016x2016
 #seed := 1572273832550568000; # 8 Var, Komplexität 6: recursion depth trap
-seed := 13896465015163; # 6 Variablen, Komplexität 6, ich: 11s Aufbaun, 60s Lift (neues Singular), Kamal: 23s Aufbau, 0.5s lift
-#seed := 20348148519320; # 2 Variablen, Komplexität 40, 5s Lift (neues + altes Singular)
+#seed := 13896465015163; # 6 Variablen, Komplexität 6, ich: 11s Aufbaun, 60s Lift (neues Singular), Kamal: 23s Aufbau, 0.5s lift
+#seed := 20348148519320; # 2 Variablen, Komplexität 40, 5s Lift (neues + altes Singular): großer Unterschied zwischen altem Lift und Freyd
 #seed := 1569944607828552000; # 3 Variablen, Komplexität 3, AdditiveClosure: error
+#seed := 1588064593291445000; # 8 Variablen, Komplexität 10 -> groß
 Display( seed );
 Reset( GlobalMersenneTwister, seed );
-p := RandomObject( CapCategory( p ), 6 );
+p := RandomObject( CapCategory( p ), 3 );
 
 #seed := NanosecondsSinceEpoch();
-#seed := 34644832520905; # 3 Variablen, Komplexität 6,6, solving 192x148 (plus 333 relations) system of equations
-#seed := 35303785094872; # 3 Variablen, Komplexität 3,3, solving 108x72 (plus 162 relations) system of equations
-#seed := 35561403481763; # 3 Variablen, Komplexität 4,4, ich sehr langsam (no_syz + QRing: 270s), Kamal schnell
-#seed := 36173556708377; # 3 Variablen, Komplexität 4,4, ich: 24s
-#seed := 36318316929536; # 3 Variablen, Komplexität 4,4, ich: 22s
+##seed := 34644832520905; # 3 Variablen, Komplexität 6,6, solving 192x148 (plus 333 relations) system of equations
+##seed := 35303785094872; # 3 Variablen, Komplexität 3,3, solving 108x72 (plus 162 relations) system of equations
+##seed := 35561403481763; # 3 Variablen, Komplexität 4,4, ich sehr langsam (no_syz + QRing: 270s), Kamal schnell
+##seed := 36173556708377; # 3 Variablen, Komplexität 4,4, ich: 24s
+##seed := 36318316929536; # 3 Variablen, Komplexität 4,4, ich: 22s
+##seed := 1588255194214724000; # 3 Variablen, Komplexität 4,4, größeres Kompilierungsbeispiel
+#seed := 1590396634266935000; # 3 Variablen, Komplexität 2,2, kleines Kompilierungsbeispiel
 #Display( seed );
 #Reset( GlobalMersenneTwister, seed );
-#m1 := RandomMorphismByInteger( CapCategory( p ), 4 );
+#m1 := RandomMorphismByInteger( CapCategory( p ), 2 );
 #Display(m1);
-#m2 := RandomMorphismWithFixedSourceByInteger( Range( m1 ), 4 );
+#m2 := RandomMorphismWithFixedSourceByInteger( Range( m1 ), 2 );
 #Display(m2);
 #m3 := PreCompose( m1, m2 );
 #
@@ -209,6 +212,7 @@ p := RandomObject( CapCategory( p ), 6 );
 #
 #m4 := Lift( m3, m2 );
 #Display( m4 );
+#Display( IsCongruentForMorphisms( PreCompose( m4, m2 ), m3 ) );
 #Error("here");
 
 
