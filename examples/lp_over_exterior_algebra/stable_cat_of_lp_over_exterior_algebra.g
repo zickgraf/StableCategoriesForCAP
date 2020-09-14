@@ -5,70 +5,13 @@ mymat_string := "1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 LoadPackage( "MonoidalCategories" );
 LoadPackage( "FreydCategories" );
-LoadPackage( "StableCategoriesForCAP" );
+LoadPackage( "ModulePresentations" );
+LoadPackage( "RingsForHomalg" );
+#LoadPackage( "StableCategoriesForCAP" );
 ReadPackage( "StableCategoriesForCAP", "/examples/lp_over_exterior_algebra/lp_over_exterior_algebra.g" );
 
 
 # homalgIOMode( "a" );
-
-BindGlobal( "ADD_METHODS_TO_STABLE_CAT_OF_LEFT_PRESENTATIONS_OVER_EXTERIOR_ALGEBRA",
-
-function( category )
-
-##
-AddLiftColift( category,
-    function( alpha, beta, gamma, delta )
-    local lift;
-    lift := colift_lift_in_stable_category( 
-            UnderlyingUnstableMorphism( alpha ), 
-            UnderlyingUnstableMorphism( beta ), 
-            UnderlyingUnstableMorphism( gamma ), 
-            UnderlyingUnstableMorphism( delta ) 
-            );
-    if lift = fail then
-        return fail;
-    else
-        return AsStableMorphism( lift );
-    fi;
-    
-    end );
-
-## Since we have LiftColift, we automatically have Lifts & Colifts (see Derivations in Triangulated categories).
-##
-AddIsSplitMonomorphism( category, 
-    function( mor )
-    local l;
-    l := Colift( mor, IdentityMorphism( Source( mor ) ) );
-
-    if l = fail then
-        AddToReasons( "IsSplitMonomorphism: because the morphism can not be coliftet to the identity morphism of the source" ); 
-        return false;
-    else 
-        return true;
-    fi;
-
-end );
-
-AddIsSplitEpimorphism( category,
-    function( mor )
-    local l;
-    l := Lift( IdentityMorphism( Range( mor ) ), mor );
-
-    if l = fail then 
-        AddToReasons( "IsSplitMonomorphism: because the morphism can not be coliftet to the identity morphism of the source" );
-        return false;
-    else 
-        return true;
-    fi;
-
-end );
-
-AddInverseImmutable( category,
-    function( mor )
-    return Lift( IdentityMorphism( Range( mor ) ), mor );
-end );
-
-end );
 
 WithComments := false;
 
@@ -76,7 +19,7 @@ WithComments := false;
 
 #homalgIOMode( "f" );
 
-R := KoszulDualRing( HomalgFieldOfRationalsInSingular()*"x,y,z,a,b,c" );
+R := KoszulDualRing( HomalgFieldOfRationalsInSingular()*"x,y" );
 
 
 A_vec_rows_zero_vec := HomalgMatrix( "[ 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]", 1, 216, R );
@@ -108,17 +51,7 @@ mymat_string := "[ 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0
 
 cat := LeftPresentations( R: FinalizeCategory := false );
 ADD_METHODS_TO_LEFT_PRESENTATIONS_OVER_EXTERIOR_ALGEBRA( cat );
-TurnAbelianCategoryToExactCategory( cat );
-SetIsFrobeniusCategory( cat, true );
 Finalize( cat );
-
-SetTestFunctionForStableCategories(cat, CanBeFactoredThroughExactProjective );
-stable_cat := StableCategory( cat );
-SetIsTriangulatedCategory( stable_cat, true );
-ADD_METHODS_TO_STABLE_CAT_OF_LEFT_PRESENTATIONS_OVER_EXTERIOR_ALGEBRA( stable_cat );
-AsTriangulatedCategory( stable_cat );
-Finalize( stable_cat );
-
 
 # r := "1 + 2*e0 + 3*e1 + 4*e0*e1" / R;
 #  
@@ -137,12 +70,10 @@ Finalize( stable_cat );
 
 m := HomalgMatrix( "[ [ e1, e0, e1, e1*e0, e0-e1 ], [ 0, 1, e1*e0, 0, -4*e1 ], [ e1+e0, 0, 1, e1*e0-e1, 0 ] ]", 3, 5, R );
 m := AsLeftPresentation( m );
-M := AsStableObject( m );
 n := HomalgMatrix( "[ [ e1*e0, e0-e1 ], [ 1, e0 ], [ e1*e0, e1*e0-e0 ] ]", 3, 2, R );
 #n := HomalgMatrix( "[ [ e0*e1 ] ]", 1, 1, R );
 #n := HomalgMatrix( "[ [ e1*e0, e0-e1 ], [ 1, e0 ] ]", 2, 2, R );
 n := AsLeftPresentation( n );
-N := AsStableObject( n );
 p := HomalgMatrix( "[ [ 1, 0, e1+e0, 0, 0 ], [ 0, 1, e0, 0, e0*e1 ], [ 0, 0, 1, e1, e0 ] ]", 3, 5, R );
 #p := HomalgMatrix( "[ [ 1, 0, 0 ], [ 0, 1, e0*e1 ] ]", 2, 3, R );
 p := HomalgMatrix( "[ [ 0, 0 ], [ 1, 0 ] ]", 2, 2, R );
@@ -184,12 +115,12 @@ seed := 1569944607828552000; # 6 Variablen, Komplexität 3, ich: 3s Aufbau, 12s 
 #seed := 1570193890032994000; # 2 Var, Komplexität 20, Kamal 2016x2016
 #seed := 1572273832550568000; # 8 Var, Komplexität 6: recursion depth trap
 #seed := 13896465015163; # 6 Variablen, Komplexität 6, ich: 11s Aufbaun, 60s Lift (neues Singular), Kamal: 23s Aufbau, 0.5s lift
-#seed := 20348148519320; # 2 Variablen, Komplexität 40, 5s Lift (neues + altes Singular): großer Unterschied zwischen altem Lift und Freyd
+seed := 20348148519320; # 2 Variablen, Komplexität 40, 5s Lift (neues + altes Singular): großer Unterschied zwischen altem Lift und Freyd
 #seed := 1569944607828552000; # 3 Variablen, Komplexität 3, AdditiveClosure: error
 #seed := 1588064593291445000; # 8 Variablen, Komplexität 10 -> groß
 Display( seed );
 Reset( GlobalMersenneTwister, seed );
-p := RandomObject( CapCategory( p ), 3 );
+p := RandomObject( CapCategory( p ), 40 );
 
 #seed := NanosecondsSinceEpoch();
 ##seed := 34644832520905; # 3 Variablen, Komplexität 6,6, solving 192x148 (plus 333 relations) system of equations
