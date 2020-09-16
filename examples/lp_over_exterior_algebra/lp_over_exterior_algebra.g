@@ -976,39 +976,10 @@ if false then
             return List( M, matrix_to_additive_closure_morphism );
         fi;
         
-        unique_object := AsAdditiveClosureObject( RingAsCategoryUniqueObject( RingAsCategory( R ) ) );
-        
-        if NrRows( M ) = 0 then
-            source := ZeroObject( AdditiveClosure( RingAsCategory( R ) ) );
-        else
-            source := DirectSum( ListWithIdenticalEntries( NrRows( M ), unique_object ) );
-        fi;
-        if NrColumns( M ) = 0 then
-            range := ZeroObject( AdditiveClosure( RingAsCategory( R ) ) );
-        else
-            range := DirectSum( ListWithIdenticalEntries( NrColumns( M ), unique_object ) );
-        fi;
-        
-        #if IsZero( M ) then
-        #    return ZeroMorphism( source, range );
-        #fi;
-        #
-        #if IsOne( M ) then
-        #    return IdentityMorphism( source );
-        #fi;
+        unique_object := RingAsCategoryUniqueObject( RingAsCategory( R ) );
 
-        matrix := EntriesOfHomalgMatrixAsListList( M );
-        for i in [ 1 .. Length( matrix ) ] do
-            for j in [ 1 .. Length( matrix[ 1 ] ) ] do
-                #matrix[i][j] := RingAsCategoryMorphism( matrix[i][j], RingAsCategory( R ) );
-                matrix[i][j] := RingAsCategoryMorphismOp( RingAsCategory( R ), HomalgMatrix( [ M[i,j] ], 1, 1, R ) );
-                # Assert( 0, IsWellDefined( matrix[i][j] ) );
-            od;
-        od;
-
-        #Error("asd");
-        
-        # Assert( 0, IsWellDefined( MorphismBetweenDirectSums( source, matrix, range ) ) );
+        source := AdditiveClosureObject( ListWithIdenticalEntries( NrRows( M ), unique_object ), AdditiveClosure( RingAsCategory( R ) ) );
+        range := AdditiveClosureObject( ListWithIdenticalEntries( NrCols( M ), unique_object ), AdditiveClosure( RingAsCategory( R ) ) );
         
         return AdditiveClosureMorphism( source, M, range );
         
