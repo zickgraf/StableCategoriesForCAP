@@ -325,19 +325,15 @@ GetMatrixOfRelationsOverRealCenter := function( R, dimension )
                     relation := zero_relation();
                     relation[1,index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( i - 1 ), "e", String( j - 1 ) ) / RealCenter;
                     Add( relations, relation );
-                    for k in [ 1 .. l ] do
-                        if k <> i and k <> j then
+                    for k in [ (i+1) .. l ] do
+                        if k <> j then
                             relation := zero_relation();
                             if k < j then
                                 relation[1,index_of_dth_ith_basis_vector( d, i )] := Concatenation( "e", String( k - 1 ), "e", String( j - 1 ) ) / RealCenter;
                             else
                                 relation[1,index_of_dth_ith_basis_vector( d, i )] := Concatenation( "-e", String( j - 1 ), "e", String( k - 1 ) ) / RealCenter;
                             fi;
-                            if k < i then
-                                relation[1,index_of_dth_ith_basis_vector( d, j )] := Concatenation( "e", String( k - 1 ), "e", String( i - 1 ) ) / RealCenter;
-                            else
-                                relation[1,index_of_dth_ith_basis_vector( d, j )] := Concatenation( "-e", String( i - 1 ), "e", String( k - 1 ) ) / RealCenter;
-                            fi;
+                            relation[1,index_of_dth_ith_basis_vector( d, j )] := Concatenation( "-e", String( i - 1 ), "e", String( k - 1 ) ) / RealCenter;
                             Add( relations, relation );
                         fi;
                     od;
