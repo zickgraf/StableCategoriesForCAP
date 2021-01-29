@@ -429,6 +429,8 @@ AddLift( cat,
   function( morphism_1, morphism_2 )
     local P, M, N, r, s, u, v, m, n, A, B, R, l, basis_indices, Q, sol, R_B, R_N, L_P, R_M, bu_A, A_vec, mat1, mat2, mat, A_vec_over_zero_vec, sol_2, XX2, vec_X_2, X_2, l2, matrix_of_relations, left_coeffs, right_coeffs, start_time, sol_3, XX3, vec_X_3, X_3, l3, L_id_s, L_P_mod, A_deco, A_deco_list, A_deco_list_vec, sol_4, XX4, XX_4, X_4, l4, X;
    
+    #Error("aaaaaaaaaaaaaaaaaaaaaaaa");
+    
     DeactivateToDoList();
     
     if WithComments = true then
@@ -476,13 +478,18 @@ AddLift( cat,
     
     R := HomalgRing( A );
 
-    l := Length( IndeterminatesOfExteriorRing( R ) );
     
-    basis_indices := standard_list_of_basis_indices( R );
+    if HasIndeterminatesOfExteriorRing( R ) then
+        l := Length( IndeterminatesOfExteriorRing( R ) );
+        
+        basis_indices := standard_list_of_basis_indices( R );
 
-    Assert( 0, 2^l = Length( basis_indices ) );
-    
-    Q := CoefficientsRing( R ); 
+        Assert( 0, 2^l = Length( basis_indices ) );
+        
+        #l := 2;
+        
+        Q := CoefficientsRing( R ); 
+    fi;
 
     if IsZero( P ) then
         sol := RightDivide( A, UnionOfRows(B,N) );
@@ -773,7 +780,8 @@ AddLift( cat,
     
     start_time := NanosecondsSinceEpoch();
 
-    
+    if HasIndeterminatesOfExteriorRing( R ) then
+
     indets := Indeterminates( R );
     
     vars := [];
@@ -826,8 +834,10 @@ AddLift( cat,
     #RealCenter :=  Q*JoinStringsWithSeparator( vars, "," );
     RealCenter :=  HomalgQRingInSingular( Q*JoinStringsWithSeparator( vars, "," ), ideal );
 
+    fi;
+
 # AdditiveClosure
-if false then
+if true then
 
     #Cfpres := LeftPresentations( RealCenter );
 
@@ -917,8 +927,10 @@ if false then
         
     end;
     
-    CR := add_hom_structure_to_CR( );
-
+    #CR := add_hom_structure_to_CR( );
+    
+    CR := RingAsCategory( R );
+    
     DeactivateCachingOfCategory(CR);
     CapCategorySwitchLogicOff(CR);
     DisableSanityChecks(CR);
@@ -940,6 +952,8 @@ if false then
     DeactivateCachingOfCategory(ERows);
     CapCategorySwitchLogicOff(ERows);
     DisableSanityChecks(ERows);
+
+    lazy := LazyCategory( ERows : optimize := 0, show_evaluation := true );
         
     # We need to solve the system
     #     X*B + Y*N = A
@@ -978,6 +992,7 @@ if false then
         range := AdditiveClosureObject( ListWithIdenticalEntries( NrCols( M ), unique_object ), AdditiveClosure( RingAsCategory( R ) ) );
         
         return AdditiveClosureMorphism( source, M, range );
+        return AsMorphismInLazyCategory( lazy, AdditiveClosureMorphism( source, M, range ) );
         
     end;
     
@@ -992,6 +1007,11 @@ if false then
     #homalgIOMode( "d" );
 
     # TraceAllMethods();
+    
+    #asd := CapJitCompiledFunction( {left_coeffs, right_coeffs, right_hand_side} -> SolveLinearSystemInAbCategory(left_coeffs, right_coeffs, right_hand_side), [ left_coeffs, right_coeffs, right_hand_side ] );
+    #
+    #Error("asd");
+    
     solution := SolveLinearSystemInAbCategory( left_coeffs, right_coeffs, right_hand_side );
 
     Y := MorphismMatrix( solution[1] );
