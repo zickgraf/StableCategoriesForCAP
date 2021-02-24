@@ -6,7 +6,7 @@
 LoadPackage( "MonoidalCategories" );
 
 #DeactivateDefaultCaching();
-SetDefaultCachingCrisp();
+#SetDefaultCachingCrisp();
 
 LoadPackage( "FreydCategories" );
 LoadPackage( "ModulePresentations" );
