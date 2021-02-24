@@ -75,25 +75,6 @@ result := Lift( alpha, gamma );
 
 Assert( 0, IsCongruentForMorphisms( PreCompose( result, gamma ), alpha ) );
 
-# FREYD (reproducible with 9a8d351810c2c619b14b4faabf9556bfa4fb115d (tmp2), disable existing lifts in ModulePresentationsForCAP, OHNE distinguished_object)
-# ENTSPRICHT EXAMPLE ID 1 mit R = QQ
-# RightDivide with matrix sizes:
-# 1x8
-# 7x8
-# solved in 0.0020070000000000001
-# RightDivide with matrix sizes:
-# 10x8
-# 7x8
-# solved in 0.016833000000000001
-# RightDivide with matrix sizes:
-# 1x7
-# 14x7
-# solved in 0.0039979999999999998
-# RightDivide with matrix sizes:
-# 1x12
-# 24x12
-# solved in 0.0064819999999999999
-
 
 # WITHOUT FREYD (reproducible with 9a8d351810c2c619b14b4faabf9556bfa4fb115d (tmp2), lp_over_exterior_algebra: my implementation over real center, AdditiveClosure)
 # ENTSPRICHT EXAMPLE ID 2 mit R = QQ
