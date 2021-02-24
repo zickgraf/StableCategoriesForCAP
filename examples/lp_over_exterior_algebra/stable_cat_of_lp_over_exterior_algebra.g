@@ -360,22 +360,15 @@ seed := 20348148519320; # EXAMPLE 2; 2 Variablen, Komplexität 40, 5s Lift (neue
 # after RP!.BasisOfRowsCoeff
 # solved in 7.1406369999999999
 
-# über CENTER, SolveTwoSidedLinearSystem bis unten:
+# SOLVE TWO SIDED über CENTER (reproducible with test2 (d3afe0ea3a132d1924706adfeb80159530ec8e4f))
 # Lift in 
 # Category of left presentations of Q{e0,e1}
 # via Freyd
 # 
 # Lift in 
 # Freyd( Additive closure( Ring as category( Q{e0,e1} ) ) )
-# via SolveLinearSystemInAbCategory
+# via going down (via SolveLinearSystemInAbCategory)
 # 
-# SolveLinearSystemInAbCategory in 
-# Freyd( Additive closure( Ring as category( Q{e0,e1} ) ) )
-# via going down
-# 
-# add modulo
-# add well-defined
-# go down
 # SolveLinearSystemInAbCategory in 
 # Additive closure( Ring as category( Q{e0,e1} ) )
 # via hom structure
@@ -395,9 +388,22 @@ seed := 20348148519320; # EXAMPLE 2; 2 Variablen, Komplexität 40, 5s Lift (neue
 # Additive closure( Ring as category( Q[e0e1]/( e0e1^2 ) ) )
 # via hom structure
 # 
-# solving 3168x5280 system of equations
+# SolveLinearSystemInAbCategory in 
+# Rows( Q[e0e1]/( e0e1^2 ) )
+# via Kronecker trick
+# 
+# solving 5280x3168 system of equations
 # main part of solution: 1x3072 = 3072
-# solved in 4.7853649999999996
+# BasisOfRowsCoeff with interesting part:
+# 3072
+# before RP!.BasisOfRowsCoeff
+# BasisOfRowModule solved in 0.82595499999999999
+# BasisOfRowsCoeffViaLift solved in 0.
+# RelativeBasisOfRowsCoeff(0) solved in 2.0724809999999998
+# RelativeBasisOfRowsCoeff(interesting) solved in 2.4053559999999998
+# BasisOfRowsCoeff solved in 2.71393
+# after RP!.BasisOfRowsCoeff
+# solved in 8.7535220000000002
 
 # FREYD über FREYD (reproduzierbar mit 9a8d351810c2c619b14b4faabf9556bfa4fb115d (tmp2), OHNE distinguished_object):
 # über Q, nicht center
