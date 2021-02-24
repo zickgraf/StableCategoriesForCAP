@@ -329,13 +329,36 @@ seed := NanosecondsSinceEpoch();
 #seed := 1572273832550568000; # 8 Var, Komplexität 6: recursion depth trap
 #seed := 13896465015163; # 6 Variablen, Komplexität 6, ich: 11s Aufbaun, 60s Lift (neues Singular), Kamal: 23s Aufbau, 0.5s lift
 seed := 20348148519320; # EXAMPLE 2; 2 Variablen, Komplexität 40, 5s Lift (neues + altes Singular): großer Unterschied zwischen altem Lift und Freyd, GAP 4.12-dev, Singular.system, exists lift
-# ROWS (reproduzierbar mit 9a8d351810c2c619b14b4faabf9556bfa4fb115d (tmp2), lp_over_exterior_algebra: my implementation over real center, AdditiveClosure):
-# über Q, nicht center
-# EXAMPLE ID: 2
-# RightDivide with matrix sizes:
-# 1x4224
-# 4224x4224
-# solved in 3.218461
+
+# SOLVE TWO SIDED über Q (reproducible with test2 (d3afe0ea3a132d1924706adfeb80159530ec8e4f))
+# Lift in 
+# Category of left presentations of Q{e0,e1}
+# via Freyd
+# 
+# Lift in 
+# Freyd( Additive closure( Ring as category( Q{e0,e1} ) ) )
+# via going down (via SolveLinearSystemInAbCategory)
+# 
+# SolveLinearSystemInAbCategory in 
+# Additive closure( Ring as category( Q{e0,e1} ) )
+# via hom structure
+# 
+# SolveLinearSystemInAbCategory in 
+# Rows( Q )
+# via Kronecker trick
+# 
+# solving 4224x4224 system of equations
+# main part of solution: 1x4096 = 4096
+# BasisOfRowsCoeff with interesting part:
+# 4096
+# before RP!.BasisOfRowsCoeff
+# BasisOfRowModule solved in 0.77866800000000003
+# BasisOfRowsCoeffViaLift solved in 9.9999999999999995e-07
+# RelativeBasisOfRowsCoeff(0) solved in 1.695182
+# RelativeBasisOfRowsCoeff(interesting) solved in 2.1163880000000002
+# BasisOfRowsCoeff solved in 2.2965390000000001
+# after RP!.BasisOfRowsCoeff
+# solved in 7.1406369999999999
 
 # über CENTER, SolveTwoSidedLinearSystem bis unten:
 # Lift in 
