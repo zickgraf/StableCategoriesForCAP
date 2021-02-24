@@ -75,14 +75,37 @@ result := Lift( alpha, gamma );
 
 Assert( 0, IsCongruentForMorphisms( PreCompose( result, gamma ), alpha ) );
 
-
-# WITHOUT FREYD (reproducible with 9a8d351810c2c619b14b4faabf9556bfa4fb115d (tmp2), lp_over_exterior_algebra: my implementation over real center, AdditiveClosure)
-# ENTSPRICHT EXAMPLE ID 2 mit R = QQ
-# RightDivide with matrix sizes:
-# 1x71
-# 83x71
-# solved in 0.0065500000000000003
-
+# SOLVE TWO SIDED (reproducible with test2 (d3afe0ea3a132d1924706adfeb80159530ec8e4f))
+# Lift in 
+# Category of left presentations of Q
+# via Freyd
+# 
+# Lift in 
+# Freyd( Additive closure( Ring as category( Q ) ) )
+# via going down (via SolveLinearSystemInAbCategory)
+# 
+# SolveLinearSystemInAbCategory in 
+# Additive closure( Ring as category( Q ) )
+# via hom structure
+# 
+# SolveLinearSystemInAbCategory in 
+# Rows( Q )
+# via Kronecker trick
+# 
+# solving 83x71 system of equations
+# main part of solution: 1x12 = 12
+# BasisOfRowsCoeff with interesting part:
+# 12
+# before RP!.BasisOfRowsCoeff
+# BasisOfRowModule solved in 0.00041300000000000001
+# BasisOfRowsCoeffViaLift solved in 0.
+# RelativeBasisOfRowsCoeff(0) solved in 0.001817
+# RelativeBasisOfRowsCoeff(interesting) solved in 0.0017390000000000001
+# BasisOfRowsCoeff solved in 0.001916
+# after RP!.BasisOfRowsCoeff
+# solved in 0.0074269999999999996
+# Error, after test over QQ called from
+# not in any function at stable_cat_of_lp_over_exterior_algebra.g:174
 
 # FREYD complete (reproducible with 8568ca6e10e2d6a072a9037685671b65e6fcada3 (support compiling and lazifying stuff), MIT distinguished_object)
 # SyzygiesOfColumns with matrix sizes:
