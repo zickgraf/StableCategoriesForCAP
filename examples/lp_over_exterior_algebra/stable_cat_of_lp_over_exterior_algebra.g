@@ -405,26 +405,6 @@ seed := 20348148519320; # EXAMPLE 2; 2 Variablen, Komplexität 40, 5s Lift (neue
 # after RP!.BasisOfRowsCoeff
 # solved in 8.7535220000000002
 
-# FREYD über FREYD (reproduzierbar mit 9a8d351810c2c619b14b4faabf9556bfa4fb115d (tmp2), OHNE distinguished_object):
-# über Q, nicht center
-# EXAMPLE ID: 1
-# RightDivide with matrix sizes:
-# 1x4096
-# 3972x4096
-# solved in 1.88185
-# RightDivide with matrix sizes:
-# 3968x4096
-# 3972x4096
-# solved in 3.4482010000000001
-# RightDivide with matrix sizes:
-# 1x3972
-# 4096x3972
-# solved in 2.9663170000000001
-# RightDivide with matrix sizes:
-# 1x4096
-# 4096x4096
-# solved in 3.0000000000000001e-06
-
 # FREYD über ROWS (reproduzierbar mit 9a8d351810c2c619b14b4faabf9556bfa4fb115d (tmp2), MIT distinguished_object):
 # über Q, nicht center
 # RightDivide with matrix sizes:
