@@ -107,73 +107,117 @@ Assert( 0, IsCongruentForMorphisms( PreCompose( result, gamma ), alpha ) );
 # Error, after test over QQ called from
 # not in any function at stable_cat_of_lp_over_exterior_algebra.g:174
 
-# FREYD complete (reproducible with 8568ca6e10e2d6a072a9037685671b65e6fcada3 (support compiling and lazifying stuff), MIT distinguished_object)
+# FREYD lift via hom-structure (reproducible with test2 (18b41878f98733b1d38a06a26bfa75250187f850))
+# Lift in 
+# Category of left presentations of Q
+# via Freyd
+# 
+# Lift in 
+# Freyd( Additive closure( Ring as category( Q ) ) )
+# via SolveLinearSystemInAbCategory
+# 
+# SolveLinearSystemInAbCategory in 
+# Freyd( Additive closure( Ring as category( Q ) ) )
+# via hom structure
+# 
 # SyzygiesOfColumns with matrix sizes:
 # 42x42
+# SyzygiesOfColumns finished
 # SyzygiesOfColumns with matrix sizes:
 # 8x8
+# SyzygiesOfColumns finished
 # LeftDivide with matrix sizes:
 # 8x4
 # 8x21
-# solved in 0.002235
+# solved in 0.002764
 # SyzygiesOfRows with matrix sizes:
 # 4x21
+# SyzygiesOfRows finished
 # RightDivide with matrix sizes:
 # 1x4
 # 3x4
-# solved in 0.0022469999999999999
+# BasisOfRowsCoeff without interesting part:
+# before RP!.BasisOfRowsCoeff
+# after RP!.BasisOfRowsCoeff
+# solved in 0.0021129999999999999
 # SyzygiesOfColumns with matrix sizes:
 # 63x63
+# SyzygiesOfColumns finished
 # SyzygiesOfColumns with matrix sizes:
 # 12x12
+# SyzygiesOfColumns finished
 # LeftDivide with matrix sizes:
 # 12x8
 # 12x42
-# solved in 0.002026
+# solved in 0.002349
 # SyzygiesOfColumns with matrix sizes:
 # 42x42
+# SyzygiesOfColumns finished
 # SyzygiesOfColumns with matrix sizes:
 # 8x8
+# SyzygiesOfColumns finished
 # LeftDivide with matrix sizes:
 # 8x4
 # 8x21
-# solved in 0.001926
-# SyzygiesOfColumns with matrix sizes:
-# 63x63
-# SyzygiesOfColumns with matrix sizes:
-# 12x12
+# solved in 0.0023449999999999999
 # LeftDivide with matrix sizes:
 # 12x8
 # 12x42
-# solved in 0.0019469999999999999
-# SyzygiesOfColumns with matrix sizes:
-# 8x8
-# SyzygiesOfColumns with matrix sizes:
-# 12x12
+# solved in 0.001085
+# diagram_for_homomorphism_structure_as_kernel_on_morphisms
 # LeftDivide with matrix sizes:
 # 12x8
 # 12x4
-# solved in 0.0022599999999999999
-# SyzygiesOfColumns with matrix sizes:
-# 42x42
-# SyzygiesOfColumns with matrix sizes:
-# 8x8
+# solved in 0.0013420000000000001
 # LeftDivide with matrix sizes:
 # 8x4
 # 8x21
-# solved in 0.0015679999999999999
+# solved in 0.00095299999999999996
 # SyzygiesOfRows with matrix sizes:
 # 8x42
+# SyzygiesOfRows finished
 # SyzygiesOfRows with matrix sizes:
 # 4x21
+# SyzygiesOfRows finished
 # RightDivide with matrix sizes:
 # 6x4
 # 3x4
-# solved in 0.0013829999999999999
+# BasisOfRowsCoeff without interesting part:
+# before RP!.BasisOfRowsCoeff
+# after RP!.BasisOfRowsCoeff
+# solved in 0.0015499999999999999
+# SolveLinearSystemInAbCategory in 
+# Rows( Q )
+# via Kronecker trick
+# 
+# solving 6x3 system of equations
+# main part of solution: 1x6 = 6
+# BasisOfRowsCoeff with interesting part:
+# 6
+# before RP!.BasisOfRowsCoeff
+# BasisOfRowModule solved in 0.00017899999999999999
+# BasisOfRowsCoeffViaLift solved in 0.
+# RelativeBasisOfRowsCoeff(0) solved in 0.00044200000000000001
+# RelativeBasisOfRowsCoeff(interesting) solved in 0.00039300000000000001
+# BasisOfRowsCoeff solved in 0.00040299999999999998
+# after RP!.BasisOfRowsCoeff
+# solved in 0.002503
+# LeftDivide with matrix sizes:
+# 12x8
+# 12x42
+# solved in 0.001127
+# SyzygiesOfRows with matrix sizes:
+# 8x42
+# SyzygiesOfRows finished
 # RightDivide with matrix sizes:
-# 1x3
-# 6x3
-# solved in 0.0021619999999999999
+# 1x8
+# 12x8
+# BasisOfRowsCoeff without interesting part:
+# before RP!.BasisOfRowsCoeff
+# after RP!.BasisOfRowsCoeff
+# solved in 0.0017329999999999999
+# Error, after test over QQ called from
+# not in any function at stable_cat_of_lp_over_exterior_algebra.g:178
 
 Error( "after test over QQ" );
 
